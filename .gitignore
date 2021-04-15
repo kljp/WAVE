@@ -1,0 +1,8 @@
+.idea/
+bin/
+cmake-build-debug/
+data/
+src/main
+src/main.o
+src/gbro
+CMakeLists.txt

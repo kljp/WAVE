@@ -42,15 +42,10 @@ __global__ void insp_clfy(
 
             else
                 fq_td_uw_d[atomicAdd(fq_td_uw_curr_sz, 1)] = vid;
+
+////////////////////////////////// global hub hash replacement
         }
 
         tid += grnt;
-    }
-
-    // flush the frontier queue, if level == 0
-    if(level == 0){
-
-        fq_td_d[0] = -1;
-        *fq_td_curr_sz = 0;
     }
 }

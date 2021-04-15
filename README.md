@@ -6,8 +6,7 @@ This project aims to support a high performance breadth-first graph traversal on
 ---
 Tested software
 -----
-g++ 5.4.0
-CUDA 11.2
+g++ 5.4.0, CUDA 11.2
 
 ---
 Tested hardware
@@ -15,7 +14,7 @@ Tested hardware
 GTX970 (more products wille be tested)
 
 ---
-Complie
+Compile
 -----
 make
 

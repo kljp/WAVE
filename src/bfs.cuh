@@ -45,12 +45,18 @@ void bfs_td(
 
     cudaDeviceSynchronize();
 
-    // flush the frontier queue, if level == 0
-    if(level != 0){
+    // flush the frontier queue
+    if(level == 0){
+
+        flush_fq<<<1,1>>>(fq_td_d, fq_td_curr_sz);
+    }
+    else{
 
         H_ERR(cudaMemcpy(fq_td_d, temp_fq_td_d, sizeof(vertex_t) * vert_count, cudaMemcpyHostToDevice));
         H_ERR(cudaMemcpy(fq_td_curr_sz, temp_fq_td_curr_sz, sizeof(vertex_t), cudaMemcpyHostToDevice));
     }
+
+    cudaDeviceSynchronize();
 
     fqg_td_th<vertex_t, index_t, depth_t> // frontier queue generation for 'thread class'
     <<<BLKS_NUM, THDS_NUM, 0, stream[0]>>>(
@@ -137,7 +143,7 @@ void bfs_tdbu(
         for(index_t i = 0; i < Q_CARD; i++)
             cudaStreamSynchronize(stream[i]);
 
-        std::cout << "level " << (int) level << std::endl;
+//        std::cout << "level " << (int) level << std::endl;
 
         if(!TD_BU){
 
@@ -167,7 +173,7 @@ void bfs_tdbu(
                     cudaStreamSynchronize(stream[i]);
             }
 
-            std::cout << "Top-down phase" << std::endl;
+//            std::cout << "Top-down phase" << std::endl;
             bfs_td<vertex_t, index_t, depth_t>(
 
                     sa_d,
@@ -218,6 +224,8 @@ int bfs( // breadth-first search on GPU
 ){
 
     cudaSetDevice(gpu_id);
+    copy_sm_sz<<<1, 1>>>(calc_sm_sz(gpu_id));
+    cudaDeviceSynchronize();
 
     depth_t *sa_d; // status array on GPU
     depth_t *sa_h; // status array on CPU
@@ -243,6 +251,10 @@ int bfs( // breadth-first search on GPU
                             // synchronized index of frontier queue for bottom-up traversal,
                             // the size must be 1, used for sync-ing atomic operations at the first level of bottom-up traversal
     vertex_t *temp_fq_bu_curr_sz;
+    vertex_t *hub_hash_vid;
+    vertex_t *temp_hub_hash_vid;
+    depth_t *hub_hash_sa;
+    depth_t *temp_hub_hash_sa;
 
     cudaStream_t *stream;
 
@@ -274,7 +286,11 @@ int bfs( // breadth-first search on GPU
             fq_bu_d,
             temp_fq_bu_d,
             fq_bu_curr_sz,
-            temp_fq_bu_curr_sz
+            temp_fq_bu_curr_sz,
+            hub_hash_vid,
+            temp_hub_hash_vid,
+            hub_hash_sa,
+            temp_hub_hash_sa
     );
 
     depth_t level;
@@ -359,7 +375,11 @@ int bfs( // breadth-first search on GPU
             fq_bu_d,
             temp_fq_bu_d,
             fq_bu_curr_sz,
-            temp_fq_bu_curr_sz
+            temp_fq_bu_curr_sz,
+            hub_hash_vid,
+            temp_hub_hash_vid,
+            hub_hash_sa,
+            temp_hub_hash_sa
     );
 
     std::cout << "GPU BFS finished" << std::endl;

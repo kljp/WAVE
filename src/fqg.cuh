@@ -67,7 +67,6 @@ __global__ void fqg_td_th(
                              sab<depth_t>::get_sab(sab<depth_t>::clfy_fcls(nb_deg_curr), (depth_t) (level + 1))
                              ) == SAB_INIT){
 
-////////////////////////////////// hub cache replacement (shared memory hub cahce scheme should be added)
                     fq_td_d[atomicAdd(fq_td_curr_sz, 1)] = nbid;
                 }
             }
@@ -127,7 +126,6 @@ __global__ void fqg_td_xw(
                              sab<depth_t>::get_sab(sab<depth_t>::clfy_fcls(nb_deg_curr), (depth_t) (level + 1))
                              ) == SAB_INIT){
 
-////////////////////////////////// hub cache replacement (shared memory hub cahce scheme should be added)
                     fq_td_d[atomicAdd(fq_td_curr_sz, 1)] = nbid;
                 }
             }

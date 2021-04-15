@@ -30,7 +30,11 @@ struct alloc{
         vertex_t* &fq_bu_d,
         vertex_t* &temp_fq_bu_d,
         vertex_t* &fq_bu_curr_sz,
-        vertex_t* &temp_fq_bu_curr_sz
+        vertex_t* &temp_fq_bu_curr_sz,
+        vertex_t* &hub_hash_vid,
+        vertex_t* &temp_hub_hash_vid,
+        depth_t* &hub_hash_sa,
+        depth_t* &temp_hub_hash_sa
     ){
 
         long cpu_bytes = 0;
@@ -99,6 +103,18 @@ struct alloc{
         H_ERR(cudaMallocHost((void **) &temp_fq_bu_curr_sz, sizeof(vertex_t)));
         *temp_fq_bu_curr_sz = 0;
         cpu_bytes += sizeof(vertex_t);
+        H_ERR(cudaMalloc((void **) &hub_hash_vid, sizeof(vertex_t) * hub_sz));
+        gpu_bytes += sizeof(vertex_t) * hub_sz;
+        H_ERR(cudaMallocHost((void **) &temp_hub_hash_vid, sizeof(vertex_t) * hub_sz));
+        for (vertex_t i = 0; i < hub_sz; i++)
+            temp_hub_hash_vid[i] = -1;
+        cpu_bytes += sizeof(vertex_t) * hub_sz;
+        H_ERR(cudaMalloc((void **) &hub_hash_sa, sizeof(depth_t) * hub_sz));
+        gpu_bytes += sizeof(depth_t) * hub_sz;
+        H_ERR(cudaMallocHost((void **) &temp_hub_hash_sa, sizeof(depth_t) * hub_sz));
+        for (vertex_t i = 0; i < hub_sz; i++)
+            temp_hub_hash_sa[i] = SAB_INIT;
+        cpu_bytes += sizeof(depth_t) * hub_sz;
 
         stream = (cudaStream_t *) malloc(sizeof(cudaStream_t) * Q_CARD);
         for(index_t i = 0; i < Q_CARD; i++)
@@ -131,7 +147,11 @@ struct alloc{
         vertex_t* &fq_bu_d,
         vertex_t* &temp_fq_bu_d,
         vertex_t* &fq_bu_curr_sz,
-        vertex_t* &temp_fq_bu_curr_sz
+        vertex_t* &temp_fq_bu_curr_sz,
+        vertex_t* &hub_hash_vid,
+        vertex_t* &temp_hub_hash_vid,
+        depth_t* &hub_hash_sa,
+        depth_t* &temp_hub_hash_sa
     ){
 
         cudaFree(sa_d);
@@ -155,6 +175,10 @@ struct alloc{
         cudaFree(temp_fq_bu_d);
         cudaFree(fq_bu_curr_sz);
         cudaFree(temp_fq_bu_curr_sz);
+        cudaFree(hub_hash_vid);
+        cudaFree(temp_hub_hash_vid);
+        cudaFree(hub_hash_sa);
+        cudaFree(temp_hub_hash_sa);
 
         free(stream);
     }

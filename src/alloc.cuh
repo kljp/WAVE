@@ -10,6 +10,7 @@ struct alloc{
         depth_t* &temp_sa,
         vertex_t* &adj_list_d, // adjacent lists
         index_t* &adj_deg_d, // the number of neigbors for each vertex
+        index_t* &adj_deg_h,
         index_t* &offset_d, // offset
         index_t* beg_pos, // csr - offset
         vertex_t* csr, // csr - edges
@@ -32,9 +33,7 @@ struct alloc{
         vertex_t* &fq_bu_curr_sz,
         vertex_t* &temp_fq_bu_curr_sz,
         vertex_t* &hub_hash_vid,
-        vertex_t* &temp_hub_hash_vid,
-        depth_t* &hub_hash_sa,
-        depth_t* &temp_hub_hash_sa
+        vertex_t* &temp_hub_hash_vid
     ){
 
         long cpu_bytes = 0;
@@ -50,8 +49,11 @@ struct alloc{
 
         H_ERR(cudaMalloc((void **) &adj_deg_d, sizeof(index_t) * vert_count));
         H_ERR(cudaMemcpy(adj_deg_d, temp_os, sizeof(index_t) * vert_count, cudaMemcpyHostToDevice));
-        delete[] temp_os;
         gpu_bytes += sizeof(index_t) * vert_count;
+        H_ERR(cudaMallocHost((void **) &adj_deg_h, sizeof(index_t) * vert_count));
+        H_ERR(cudaMemcpy(adj_deg_h, temp_os, sizeof(index_t) * vert_count, cudaMemcpyHostToHost));
+        cpu_bytes += sizeof(index_t) * vert_count;
+        delete[] temp_os;
 
         H_ERR(cudaMalloc((void **) &offset_d, sizeof(index_t) * vert_count));
         H_ERR(cudaMemcpy(offset_d, beg_pos, sizeof(index_t) * vert_count, cudaMemcpyHostToDevice));
@@ -79,7 +81,6 @@ struct alloc{
         *temp_fq_td_curr_sz = 0;
         cpu_bytes += sizeof(vertex_t);
         H_ERR(cudaMallocHost((void **) &fq_td_sz_h, sizeof(vertex_t)));
-        *fq_td_sz_h = 0;
         cpu_bytes += sizeof(vertex_t);
         H_ERR(cudaMalloc((void **) &fq_td_th_d, sizeof(vertex_t) * vert_count));
         gpu_bytes += sizeof(vertex_t) * vert_count;
@@ -103,18 +104,12 @@ struct alloc{
         H_ERR(cudaMallocHost((void **) &temp_fq_bu_curr_sz, sizeof(vertex_t)));
         *temp_fq_bu_curr_sz = 0;
         cpu_bytes += sizeof(vertex_t);
-        H_ERR(cudaMalloc((void **) &hub_hash_vid, sizeof(vertex_t) * hub_sz));
-        gpu_bytes += sizeof(vertex_t) * hub_sz;
-        H_ERR(cudaMallocHost((void **) &temp_hub_hash_vid, sizeof(vertex_t) * hub_sz));
-        for (vertex_t i = 0; i < hub_sz; i++)
+        H_ERR(cudaMalloc((void **) &hub_hash_vid, sizeof(vertex_t) * HUB_SZ));
+        gpu_bytes += sizeof(vertex_t) * HUB_SZ;
+        H_ERR(cudaMallocHost((void **) &temp_hub_hash_vid, sizeof(vertex_t) * HUB_SZ));
+        for (vertex_t i = 0; i < HUB_SZ; i++)
             temp_hub_hash_vid[i] = -1;
-        cpu_bytes += sizeof(vertex_t) * hub_sz;
-        H_ERR(cudaMalloc((void **) &hub_hash_sa, sizeof(depth_t) * hub_sz));
-        gpu_bytes += sizeof(depth_t) * hub_sz;
-        H_ERR(cudaMallocHost((void **) &temp_hub_hash_sa, sizeof(depth_t) * hub_sz));
-        for (vertex_t i = 0; i < hub_sz; i++)
-            temp_hub_hash_sa[i] = SAB_INIT;
-        cpu_bytes += sizeof(depth_t) * hub_sz;
+        cpu_bytes += sizeof(vertex_t) * HUB_SZ;
 
         stream = (cudaStream_t *) malloc(sizeof(cudaStream_t) * Q_CARD);
         for(index_t i = 0; i < Q_CARD; i++)
@@ -131,6 +126,7 @@ struct alloc{
         depth_t* &temp_sa,
         vertex_t* &adj_list_d,
         index_t* &adj_deg_d,
+        index_t* &adj_deg_h,
         index_t* &offset_d,
         cudaStream_t* &stream,
         vertex_t* &fq_td_d,
@@ -149,9 +145,7 @@ struct alloc{
         vertex_t* &fq_bu_curr_sz,
         vertex_t* &temp_fq_bu_curr_sz,
         vertex_t* &hub_hash_vid,
-        vertex_t* &temp_hub_hash_vid,
-        depth_t* &hub_hash_sa,
-        depth_t* &temp_hub_hash_sa
+        vertex_t* &temp_hub_hash_vid
     ){
 
         cudaFree(sa_d);
@@ -159,6 +153,7 @@ struct alloc{
         cudaFree(temp_sa);
         cudaFree(adj_list_d);
         cudaFree(adj_deg_d);
+        cudaFree(adj_deg_h);
         cudaFree(offset_d);
         cudaFree(fq_td_d);
         cudaFree(temp_fq_td_d);
@@ -177,8 +172,6 @@ struct alloc{
         cudaFree(temp_fq_bu_curr_sz);
         cudaFree(hub_hash_vid);
         cudaFree(temp_hub_hash_vid);
-        cudaFree(hub_hash_sa);
-        cudaFree(temp_hub_hash_sa);
 
         free(stream);
     }

@@ -15,8 +15,7 @@ const index_t th_b = 1024; // threshold beta, 32 * 32
 const index_t THDS_NUM =  256; // block dimension
 const index_t  BLKS_NUM = 256; // grid dimension
 
-__device__ vertex_t hub_sz_d;
-vertex_t hub_sz;
+#define HUB_SZ 3072
 
 #define Q_CARD 3
 
@@ -49,26 +48,6 @@ __global__ void warm_up_gpu(){
 
     for(int i = 0; i < 10; i++)
         vc += ((float) tid + va * vb);
-}
-
-vertex_t calc_sm_sz(index_t gpu_id){
-
-    cudaDeviceProp deviceProp;
-    cudaGetDeviceProperties(&deviceProp, gpu_id);
-    unsigned int sm_sz = (unsigned int) deviceProp.sharedMemPerMultiprocessor;
-    unsigned int wp_smx = (unsigned int) deviceProp.maxThreadsPerMultiProcessor / th_a;
-    unsigned int wp_blk = THDS_NUM / th_a;
-    unsigned int blk_smx = wp_smx / wp_blk;
-    unsigned int sm_sz_blk = sm_sz / blk_smx;
-    hub_sz = ((vertex_t) sm_sz_blk) / ((vertex_t) sizeof(vertex_t));
-    hub_sz /= 2; // because we use two arrays for hub cache (vertex id array and status bit array)
-
-    return hub_sz;
-}
-
-__global__ void copy_sm_sz(vertex_t hub_sz){
-
-    hub_sz_d = hub_sz;
 }
 
 __global__ void flush_fq(vertex_t *fq_td_d, vertex_t *fq_td_curr_sz){

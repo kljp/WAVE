@@ -31,12 +31,25 @@ __global__ void fqg_td_th(
         vertex_t *fq_td_d,
         vertex_t *fq_td_curr_sz,
         vertex_t *fq_td_th_d,
-        vertex_t *fq_td_th_curr_sz
+        vertex_t *fq_td_th_curr_sz,
+        vertex_t *hub_hash_vid
 ){
 
     index_t tid = threadIdx.x + blockIdx.x * blockDim.x;
     const index_t grnt = blockDim.x * gridDim.x; // granularity
     const index_t fq_th_sz = (index_t) *fq_td_th_curr_sz;
+
+    __shared__ vertex_t hub_cache_vid[HUB_SZ];
+
+    index_t cache_ptr = threadIdx.x;
+
+    while(cache_ptr < HUB_SZ){
+
+        hub_cache_vid[cache_ptr] = hub_hash_vid[cache_ptr];
+        cache_ptr += blockDim.x;
+    }
+
+    __syncthreads();
 
     vertex_t vid;
     index_t deg_curr;
@@ -55,7 +68,10 @@ __global__ void fqg_td_th(
         for(index_t i = 0; i < deg_curr; i++){
 
             nbid = adj_list_d[beg_pos + i];
-////////////////////////////////// hub cache check (shared memory hub cahce scheme should be added)
+
+            if(hub_cache_vid[nbid % HUB_SZ] == nbid)
+                continue;
+
             nb_sab_curr = sa_d[nbid];
 
             if(nb_sab_curr == SAB_INIT){
@@ -88,7 +104,8 @@ __global__ void fqg_td_xw(
         vertex_t *fq_td_curr_sz,
         vertex_t *fq_td_xw_d,
         vertex_t *fq_td_xw_curr_sz,
-        const index_t th_x
+        const index_t th_x,
+        vertex_t *hub_hash_vid
 ){
 
     index_t tid = threadIdx.x + blockIdx.x * blockDim.x;
@@ -96,6 +113,18 @@ __global__ void fqg_td_xw(
     index_t xwid = tid / th_x; // warpID (uni-warp or mult-warp)
     const index_t grnt = blockDim.x * gridDim.x / th_x; // granularity
     const index_t fq_xw_sz = (index_t) *fq_td_xw_curr_sz;
+
+    __shared__ vertex_t hub_cache_vid[HUB_SZ];
+
+    index_t cache_ptr = threadIdx.x;
+
+    while(cache_ptr < HUB_SZ){
+
+        hub_cache_vid[cache_ptr] = hub_hash_vid[cache_ptr];
+        cache_ptr += blockDim.x;
+    }
+
+    __syncthreads();
 
     vertex_t vid;
     index_t deg_curr;
@@ -114,7 +143,13 @@ __global__ void fqg_td_xw(
         while(lid < deg_curr){
 
             nbid = adj_list_d[beg_pos + lid];
-////////////////////////////////// hub cache check (shared memory hub cahce scheme should be added)
+
+            if(hub_cache_vid[nbid % HUB_SZ] == nbid){
+
+                lid += th_x;
+                continue;
+            }
+
             nb_sab_curr = sa_d[nbid];
 
             if(nb_sab_curr == SAB_INIT){

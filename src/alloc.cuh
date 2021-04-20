@@ -32,8 +32,8 @@ struct alloc{
         vertex_t* &temp_fq_bu_d,
         vertex_t* &fq_bu_curr_sz,
         vertex_t* &temp_fq_bu_curr_sz,
-        vertex_t* &hub_hash_vid,
-        vertex_t* &temp_hub_hash_vid
+        vertex_t* &hub_hash,
+        vertex_t* &temp_hub_hash
     ){
 
         long cpu_bytes = 0;
@@ -71,15 +71,12 @@ struct alloc{
 
         H_ERR(cudaMalloc((void **) &fq_td_d, sizeof(vertex_t) * vert_count));
         gpu_bytes += sizeof(vertex_t) * vert_count;
-        H_ERR(cudaMallocHost((void **) &temp_fq_td_d, sizeof(vertex_t) * vert_count));
-        for (vertex_t i = 0; i < vert_count; i++)
-            temp_fq_td_d[i] = -1;
-        cpu_bytes += sizeof(vertex_t) * vert_count;
+        H_ERR(cudaMalloc((void **) &temp_fq_td_d, sizeof(vertex_t) * vert_count));
+        gpu_bytes += sizeof(vertex_t) * vert_count;
         H_ERR(cudaMalloc((void **) &fq_td_curr_sz, sizeof(vertex_t)));
         gpu_bytes += sizeof(vertex_t);
-        H_ERR(cudaMallocHost((void **) &temp_fq_td_curr_sz, sizeof(vertex_t)));
-        *temp_fq_td_curr_sz = 0;
-        cpu_bytes += sizeof(vertex_t);
+        H_ERR(cudaMalloc((void **) &temp_fq_td_curr_sz, sizeof(vertex_t)));
+        gpu_bytes += sizeof(vertex_t);
         H_ERR(cudaMallocHost((void **) &fq_td_sz_h, sizeof(vertex_t)));
         cpu_bytes += sizeof(vertex_t);
         H_ERR(cudaMalloc((void **) &fq_td_th_d, sizeof(vertex_t) * vert_count));
@@ -96,20 +93,16 @@ struct alloc{
         gpu_bytes += sizeof(vertex_t);
         H_ERR(cudaMalloc((void **) &fq_bu_d, sizeof(vertex_t) * vert_count));
         gpu_bytes += sizeof(vertex_t) * vert_count;
-        H_ERR(cudaMallocHost((void **) &temp_fq_bu_d, sizeof(vertex_t) * vert_count));
-        for (vertex_t i = 0; i < vert_count; i++)
-            temp_fq_bu_d[i] = -1;
+        H_ERR(cudaMalloc((void **) &temp_fq_bu_d, sizeof(vertex_t) * vert_count));
+        gpu_bytes += sizeof(vertex_t) * vert_count;
         H_ERR(cudaMalloc((void **) &fq_bu_curr_sz, sizeof(vertex_t)));
         gpu_bytes += sizeof(vertex_t);
-        H_ERR(cudaMallocHost((void **) &temp_fq_bu_curr_sz, sizeof(vertex_t)));
-        *temp_fq_bu_curr_sz = 0;
-        cpu_bytes += sizeof(vertex_t);
-        H_ERR(cudaMalloc((void **) &hub_hash_vid, sizeof(vertex_t) * HUB_SZ));
+        H_ERR(cudaMalloc((void **) &temp_fq_bu_curr_sz, sizeof(vertex_t)));
+        gpu_bytes += sizeof(vertex_t);
+        H_ERR(cudaMalloc((void **) &hub_hash, sizeof(vertex_t) * HUB_SZ));
         gpu_bytes += sizeof(vertex_t) * HUB_SZ;
-        H_ERR(cudaMallocHost((void **) &temp_hub_hash_vid, sizeof(vertex_t) * HUB_SZ));
-        for (vertex_t i = 0; i < HUB_SZ; i++)
-            temp_hub_hash_vid[i] = -1;
-        cpu_bytes += sizeof(vertex_t) * HUB_SZ;
+        H_ERR(cudaMalloc((void **) &temp_hub_hash, sizeof(vertex_t) * HUB_SZ));
+        gpu_bytes += sizeof(vertex_t) * HUB_SZ;
 
         stream = (cudaStream_t *) malloc(sizeof(cudaStream_t) * Q_CARD);
         for(index_t i = 0; i < Q_CARD; i++)
@@ -144,8 +137,8 @@ struct alloc{
         vertex_t* &temp_fq_bu_d,
         vertex_t* &fq_bu_curr_sz,
         vertex_t* &temp_fq_bu_curr_sz,
-        vertex_t* &hub_hash_vid,
-        vertex_t* &temp_hub_hash_vid
+        vertex_t* &hub_hash,
+        vertex_t* &temp_hub_hash
     ){
 
         cudaFree(sa_d);
@@ -170,8 +163,8 @@ struct alloc{
         cudaFree(temp_fq_bu_d);
         cudaFree(fq_bu_curr_sz);
         cudaFree(temp_fq_bu_curr_sz);
-        cudaFree(hub_hash_vid);
-        cudaFree(temp_hub_hash_vid);
+        cudaFree(hub_hash);
+        cudaFree(temp_hub_hash);
 
         free(stream);
     }

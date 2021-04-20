@@ -20,11 +20,21 @@ int main(int args, char **argv){
     graph<long, long, double, vertex_t, index_t, double> *ginst
     = new graph<long, long, double, vertex_t, index_t, double>(argv[1], argv[2], NULL);
 
-    vertex_t src = rand() % ginst->vert_count;
+    vertex_t *src_list = new int[NUM_ITER];
+    vertex_t src;
+    for(index_t i = 0; i < NUM_ITER; i++){
+
+        src = rand() % ginst->vert_count;
+
+        if(ginst->beg_pos[src + 1] - ginst->beg_pos[src] > 0)
+            src_list[i] = src;
+        else
+            i--;
+    }
 
     bfs<vertex_t, index_t>(
 
-        src,
+        src_list,
         ginst->beg_pos,
         ginst->csr,
         ginst->vert_count,
@@ -32,6 +42,7 @@ int main(int args, char **argv){
         gpu_id
     );
 
+    delete[] src_list;
     delete ginst;
 
     return 0;

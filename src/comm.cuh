@@ -9,13 +9,19 @@ typedef unsigned int depth_t;
 
 index_t TD_BU; // 0: top-down, 1: bottom-up
 
-const index_t th_a = 32; // threshold alpha
-const index_t th_b = 1024; // threshold beta, 32 * 32
+const index_t THDS_NUM =  96; // block dimension
+const index_t  BLKS_NUM = 64; // grid dimension
+const index_t THDS_NUM_UW =  96; // block dimension
+const index_t  BLKS_NUM_UW = 96; // grid dimension
+const index_t THDS_NUM_MW =  96; // block dimension
+const index_t  BLKS_NUM_MW = 96; // grid dimension
 
-const index_t THDS_NUM =  256; // block dimension
-const index_t  BLKS_NUM = 256; // grid dimension
+const index_t th_a = 32; // threshold alpha
+const index_t th_b = 512; // threshold beta
 
 #define HUB_SZ 3072
+
+#define NUM_ITER 256
 
 #define Q_CARD 3
 
@@ -48,12 +54,6 @@ __global__ void warm_up_gpu(){
 
     for(int i = 0; i < 10; i++)
         vc += ((float) tid + va * vb);
-}
-
-__global__ void flush_fq(vertex_t *fq_td_d, vertex_t *fq_td_curr_sz){
-
-    fq_td_d[0] = -1;
-    *fq_td_curr_sz = 0;
 }
 
 #endif

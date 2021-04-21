@@ -30,20 +30,21 @@ __global__ void insp_clfy(
         sab_curr = sa_d[vid];
         fcls_curr = sab<depth_t>::get_fcls(sab_curr);
 
-        if(fcls_curr == FCLS_TH)
-            fq_td_th_d[atomicAdd(fq_td_th_curr_sz, 1)] = vid;
-
-        else if(fcls_curr == FCLS_MW){
-
-            fq_td_mw_d[atomicAdd(fq_td_mw_curr_sz, 1)] = vid;
-//            hub_hash[vid % HUB_SZ] = vid;
-        }
-
-        else{
-
-            fq_td_uw_d[atomicAdd(fq_td_uw_curr_sz, 1)] = vid;
-//            hub_hash[vid % HUB_SZ] = vid;
-        }
+        fq_td_uw_d[atomicAdd(fq_td_uw_curr_sz, 1)] = vid;
+//        if(fcls_curr == FCLS_TH)
+//            fq_td_th_d[atomicAdd(fq_td_th_curr_sz, 1)] = vid;
+//
+//        else if(fcls_curr == FCLS_MW){
+//
+//            fq_td_mw_d[atomicAdd(fq_td_mw_curr_sz, 1)] = vid;
+////            hub_hash[vid % HUB_SZ] = vid;
+//        }
+//
+//        else{
+//
+//            fq_td_uw_d[atomicAdd(fq_td_uw_curr_sz, 1)] = vid;
+////            hub_hash[vid % HUB_SZ] = vid;
+//        }
 
         tid += grnt;
     }

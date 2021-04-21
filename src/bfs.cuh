@@ -71,21 +71,21 @@ void bfs_td(
     }
     cudaDeviceSynchronize();
 
-    fqg_td_th<vertex_t, index_t, depth_t> // frontier queue generation for 'thread class'
-    <<<BLKS_NUM, THDS_NUM, 0, stream[0]>>>(
-
-            sa_d,
-            adj_list_d,
-            offset_d,
-            adj_deg_d,
-            level,
-            fq_td_d,
-            fq_td_curr_sz,
-            fq_td_th_d,
-            fq_td_th_curr_sz,
-            hub_hash
-    );
-    cudaDeviceSynchronize();
+//    fqg_td_th<vertex_t, index_t, depth_t> // frontier queue generation for 'thread class'
+//    <<<BLKS_NUM, THDS_NUM, 0, stream[0]>>>(
+//
+//            sa_d,
+//            adj_list_d,
+//            offset_d,
+//            adj_deg_d,
+//            level,
+//            fq_td_d,
+//            fq_td_curr_sz,
+//            fq_td_th_d,
+//            fq_td_th_curr_sz,
+//            hub_hash
+//    );
+//    cudaDeviceSynchronize();
 
     fqg_td_xw<vertex_t, index_t, depth_t> // frontier queue generation for 'uni-warp class'
     <<<BLKS_NUM_UW, THDS_NUM_UW, 0, stream[1]>>>(
@@ -104,22 +104,22 @@ void bfs_td(
     );
     cudaDeviceSynchronize();
 
-    fqg_td_xw<vertex_t, index_t, depth_t> // frontier queue generation for 'mult-warp class'
-    <<<BLKS_NUM_MW, THDS_NUM_MW, 0, stream[2]>>>(
-
-            sa_d,
-            adj_list_d,
-            offset_d,
-            adj_deg_d,
-            level,
-            fq_td_d,
-            fq_td_curr_sz,
-            fq_td_mw_d,
-            fq_td_mw_curr_sz,
-            th_b,
-            hub_hash
-    );
-    cudaDeviceSynchronize();
+//    fqg_td_xw<vertex_t, index_t, depth_t> // frontier queue generation for 'mult-warp class'
+//    <<<BLKS_NUM_MW, THDS_NUM_MW, 0, stream[2]>>>(
+//
+//            sa_d,
+//            adj_list_d,
+//            offset_d,
+//            adj_deg_d,
+//            level,
+//            fq_td_d,
+//            fq_td_curr_sz,
+//            fq_td_mw_d,
+//            fq_td_mw_curr_sz,
+//            th_b,
+//            hub_hash
+//    );
+//    cudaDeviceSynchronize();
 
 //    for(index_t i = 0; i < Q_CARD; i++)
 //        cudaStreamSynchronize(stream[i]);

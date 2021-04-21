@@ -8,8 +8,7 @@ __global__ void mcpy_init_temp(
         vertex_t *temp_fq_td_d,
         vertex_t *temp_fq_td_curr_sz,
         vertex_t *temp_fq_bu_d,
-        vertex_t *temp_fq_bu_curr_sz,
-        vertex_t *temp_hub_hash
+        vertex_t *temp_fq_bu_curr_sz
 ){
 
     index_t tid_st = threadIdx.x + blockDim.x * blockIdx.x;
@@ -23,14 +22,6 @@ __global__ void mcpy_init_temp(
         temp_fq_bu_d[tid] = -1;
         tid += grnt;
     }
-
-    tid = tid_st;
-    while(tid < HUB_SZ){
-
-        temp_hub_hash[tid] = -1;
-        tid += grnt;
-    }
-
 
     if(tid_st == 0){
 

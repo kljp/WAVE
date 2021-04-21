@@ -1,7 +1,7 @@
 exe = gbro
 
 cc = "$(shell which nvcc)" 
-flags = -I. -O3
+flags = -I. -O3 -Xptxas -dlcm=ca
 
 ifeq ($(debug), 1)
 	flags+= -DDEBUG 

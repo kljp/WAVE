@@ -11,25 +11,13 @@ index_t TD_BU; // 0: top-down, 1: bottom-up
 
 const index_t THDS_NUM =  96; // block dimension
 const index_t  BLKS_NUM = 64; // grid dimension
-const index_t THDS_NUM_UW =  96; // block dimension
-const index_t  BLKS_NUM_UW = 96; // grid dimension
-const index_t THDS_NUM_MW =  96; // block dimension
-const index_t  BLKS_NUM_MW = 96; // grid dimension
+const index_t THDS_NUM_FQG =  1024; // block dimension
+const index_t  BLKS_NUM_FQG = 4096; // grid dimension
 
-const index_t th_a = 32; // threshold alpha
-const index_t th_b = 512; // threshold beta
-
-#define HUB_SZ 3072
+#define WSZ 16; // warp size
 
 #define NUM_ITER 256
-
-#define Q_CARD 3
-
-#define FCLS_TH (unsigned int) (0x00000003)
-#define FCLS_UW (unsigned int) (0x00000002)
-#define FCLS_MW (unsigned int) (0x00000001)
-
-#define SAB_INIT (unsigned int) (0x3FFFFFFF)
+#define INFTY (unsigned int) (0xFFFFFFFF)
 
 static void HandleError( cudaError_t err,
                          const char *file,

@@ -2,7 +2,6 @@
 #include "alloc.cuh"
 #include "wtime.h"
 #include "comm.cuh"
-#include "insp.cuh"
 #include "fqg.cuh"
 #include "mcpy.cuh"
 
@@ -14,117 +13,72 @@ void bfs_td(
         const index_t *offset_d,
         const index_t *adj_deg_d,
         const index_t vert_count,
-        cudaStream_t *stream,
         depth_t &level,
-        vertex_t *fq_td_d,
-        vertex_t *temp_fq_td_d,
-        vertex_t *fq_td_curr_sz,
-        vertex_t *temp_fq_td_curr_sz,
+        vertex_t *fq_td_in_d,
+        vertex_t *fq_td_in_curr_sz,
         vertex_t *fq_td_sz_h,
-        vertex_t *fq_td_th_d,
-        vertex_t *fq_td_th_curr_sz,
-        vertex_t *fq_td_uw_d,
-        vertex_t *fq_td_uw_curr_sz,
-        vertex_t *fq_td_mw_d,
-        vertex_t *fq_td_mw_curr_sz,
-        vertex_t *hub_hash
+        vertex_t *fq_td_out_d,
+        vertex_t *fq_td_out_curr_sz
 ){
 
-    insp_clfy<vertex_t, index_t, depth_t>
-    <<<BLKS_NUM, THDS_NUM>>>(
+    if(*fq_td_sz_h < 4096){
 
-            sa_d,
-            fq_td_d,
-            fq_td_curr_sz,
-            fq_td_th_d,
-            fq_td_th_curr_sz,
-            fq_td_uw_d,
-            fq_td_uw_curr_sz,
-            fq_td_mw_d,
-            fq_td_mw_curr_sz,
-            hub_hash
-    );
+        fqg_td_ao<vertex_t, index_t, depth_t>
+        <<<BLKS_NUM_FQG, THDS_NUM_FQG>>>(
 
-    cudaDeviceSynchronize();
-
-    // flush the frontier queue
-    if(level == 0){
-
-        flush_fq<vertex_t, index_t, depth_t>
-        <<<1,1>>>(
-
-                fq_td_d,
-                fq_td_curr_sz
+                sa_d,
+                adj_list_d,
+                offset_d,
+                adj_deg_d,
+                level,
+                fq_td_in_d,
+                fq_td_in_curr_sz,
+                fq_td_out_d,
+                fq_td_out_curr_sz
         );
+        cudaDeviceSynchronize();
     }
+
     else{
 
-        mcpy_init_fq_td<vertex_t, index_t, depth_t>
-        <<<BLKS_NUM, THDS_NUM>>>(
+        fqg_td_ao2<vertex_t, index_t, depth_t>
+        <<<BLKS_NUM_FQG, THDS_NUM_FQG>>>(
 
-                vert_count,
-                temp_fq_td_d,
-                temp_fq_td_curr_sz,
-                fq_td_d,
-                fq_td_curr_sz
+                sa_d,
+                adj_list_d,
+                offset_d,
+                adj_deg_d,
+                level,
+                fq_td_in_d,
+                fq_td_in_curr_sz
         );
+        cudaDeviceSynchronize();
+
+        fqg_td_ao3<vertex_t, index_t, depth_t>
+        <<<BLKS_NUM_FQG, THDS_NUM_FQG>>>(
+
+                sa_d,
+                vert_count,
+                level,
+                fq_td_out_d,
+                fq_td_out_curr_sz
+        );
+        cudaDeviceSynchronize();
     }
-    cudaDeviceSynchronize();
 
-//    fqg_td_th<vertex_t, index_t, depth_t> // frontier queue generation for 'thread class'
-//    <<<BLKS_NUM, THDS_NUM, 0, stream[0]>>>(
-//
-//            sa_d,
-//            adj_list_d,
-//            offset_d,
-//            adj_deg_d,
-//            level,
-//            fq_td_d,
-//            fq_td_curr_sz,
-//            fq_td_th_d,
-//            fq_td_th_curr_sz,
-//            hub_hash
-//    );
-//    cudaDeviceSynchronize();
 
-    fqg_td_xw<vertex_t, index_t, depth_t> // frontier queue generation for 'uni-warp class'
-    <<<BLKS_NUM_UW, THDS_NUM_UW, 0, stream[1]>>>(
 
-            sa_d,
-            adj_list_d,
-            offset_d,
-            adj_deg_d,
-            level,
-            fq_td_d,
-            fq_td_curr_sz,
-            fq_td_uw_d,
-            fq_td_uw_curr_sz,
-            th_a,
-            hub_hash
+    mcpy_init_fq_td<vertex_t, index_t, depth_t>
+    <<<BLKS_NUM, THDS_NUM>>>(
+
+            vert_count,
+            fq_td_out_d,
+            fq_td_out_curr_sz,
+            fq_td_in_d,
+            fq_td_in_curr_sz
     );
     cudaDeviceSynchronize();
-
-//    fqg_td_xw<vertex_t, index_t, depth_t> // frontier queue generation for 'mult-warp class'
-//    <<<BLKS_NUM_MW, THDS_NUM_MW, 0, stream[2]>>>(
-//
-//            sa_d,
-//            adj_list_d,
-//            offset_d,
-//            adj_deg_d,
-//            level,
-//            fq_td_d,
-//            fq_td_curr_sz,
-//            fq_td_mw_d,
-//            fq_td_mw_curr_sz,
-//            th_b,
-//            hub_hash
-//    );
-//    cudaDeviceSynchronize();
-
-//    for(index_t i = 0; i < Q_CARD; i++)
-//        cudaStreamSynchronize(stream[i]);
-
-    H_ERR(cudaMemcpy(fq_td_sz_h, fq_td_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
+    H_ERR(cudaMemcpy(fq_td_sz_h, fq_td_in_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
 }
 
 template<typename vertex_t, typename index_t, typename depth_t>
@@ -136,69 +90,40 @@ void bfs_tdbu(
         const index_t *offset_d,
         const index_t *adj_deg_d,
         const index_t vert_count,
-        cudaStream_t *stream,
         depth_t &level,
-        vertex_t *fq_td_d,
+        vertex_t *fq_td_in_d,
         vertex_t *temp_fq_td_d,
-        vertex_t *fq_td_curr_sz,
+        vertex_t *fq_td_in_curr_sz,
         vertex_t *temp_fq_td_curr_sz,
         vertex_t *fq_td_sz_h,
-        vertex_t *fq_td_th_d,
-        vertex_t *fq_td_th_curr_sz,
-        vertex_t *fq_td_uw_d,
-        vertex_t *fq_td_uw_curr_sz,
-        vertex_t *fq_td_mw_d,
-        vertex_t *fq_td_mw_curr_sz,
+        vertex_t *fq_td_out_d,
+        vertex_t *fq_td_out_curr_sz,
         vertex_t *fq_bu_d,
         vertex_t *temp_fq_bu_d,
         vertex_t *fq_bu_curr_sz,
-        vertex_t *temp_fq_bu_curr_sz,
-        vertex_t *hub_hash
+        vertex_t *temp_fq_bu_curr_sz
 ){
 
     TD_BU = 0;
 
     for(level = 0; ; level++){
 
-        for(index_t i = 0; i < Q_CARD; i++)
-            cudaStreamSynchronize(stream[i]);
+        cudaDeviceSynchronize();
 
 //        std::cout << "level " << (int) level << std::endl;
 
         if(!TD_BU){
 
             mcpy_init_fq_td<vertex_t, index_t, depth_t>
-            <<<BLKS_NUM, THDS_NUM, 0, stream[0]>>>(
+            <<<BLKS_NUM, THDS_NUM>>>(
 
                     vert_count,
                     temp_fq_td_d,
                     temp_fq_td_curr_sz,
-                    fq_td_th_d,
-                    fq_td_th_curr_sz
+                    fq_td_out_d,
+                    fq_td_out_curr_sz
             );
-
-            mcpy_init_fq_td<vertex_t, index_t, depth_t>
-            <<<BLKS_NUM, THDS_NUM, 0, stream[1]>>>(
-
-                    vert_count,
-                    temp_fq_td_d,
-                    temp_fq_td_curr_sz,
-                    fq_td_uw_d,
-                    fq_td_uw_curr_sz
-            );
-
-            mcpy_init_fq_td<vertex_t, index_t, depth_t>
-            <<<BLKS_NUM, THDS_NUM, 0, stream[2]>>>(
-
-                    vert_count,
-                    temp_fq_td_d,
-                    temp_fq_td_curr_sz,
-                    fq_td_mw_d,
-                    fq_td_mw_curr_sz
-            );
-
-            for(index_t i = 0; i < Q_CARD; i++)
-                cudaStreamSynchronize(stream[i]);
+            cudaDeviceSynchronize();
 
             if(level == 0){
 
@@ -208,8 +133,8 @@ void bfs_tdbu(
                         vert_count,
                         temp_fq_td_d,
                         temp_fq_td_curr_sz,
-                        fq_td_d,
-                        fq_td_curr_sz
+                        fq_td_in_d,
+                        fq_td_in_curr_sz
                 );
                 cudaDeviceSynchronize();
 
@@ -218,9 +143,8 @@ void bfs_tdbu(
 
                         src,
                         sa_d,
-                        adj_deg_d,
-                        fq_td_d,
-                        fq_td_curr_sz
+                        fq_td_in_d,
+                        fq_td_in_curr_sz
                 );
                 cudaDeviceSynchronize();
             }
@@ -233,20 +157,12 @@ void bfs_tdbu(
                     offset_d,
                     adj_deg_d,
                     vert_count,
-                    stream,
                     level,
-                    fq_td_d,
-                    temp_fq_td_d,
-                    fq_td_curr_sz,
-                    temp_fq_td_curr_sz,
+                    fq_td_in_d,
+                    fq_td_in_curr_sz,
                     fq_td_sz_h,
-                    fq_td_th_d,
-                    fq_td_th_curr_sz,
-                    fq_td_uw_d,
-                    fq_td_uw_curr_sz,
-                    fq_td_mw_d,
-                    fq_td_mw_curr_sz,
-                    hub_hash
+                    fq_td_out_d,
+                    fq_td_out_curr_sz
             );
         }
         else{
@@ -287,28 +203,20 @@ int bfs( // breadth-first search on GPU
     index_t *adj_deg_h;
     vertex_t *adj_list_d; // adjacent lists
     index_t *offset_d; // offset
-    vertex_t *fq_td_d; // frontier queue for top-down traversal
+    vertex_t *fq_td_in_d; // frontier queue for top-down traversal
     vertex_t *temp_fq_td_d; // used at the start of every level
-    vertex_t *fq_td_curr_sz; // used for the top-down queue size
+    vertex_t *fq_td_in_curr_sz; // used for the top-down queue size
                             // synchronized index of frontier queue for top-down traversal, the size must be 1
     vertex_t *temp_fq_td_curr_sz;
     vertex_t *fq_td_sz_h;
-    vertex_t *fq_td_th_d; // sub-queue for 'thread' frontier class
-    vertex_t *fq_td_th_curr_sz;
-    vertex_t *fq_td_uw_d; // sub-queue for 'uni-warp' frontier class
-    vertex_t *fq_td_uw_curr_sz;
-    vertex_t *fq_td_mw_d; // sub-queue for 'mult-warp' frontier class
-    vertex_t *fq_td_mw_curr_sz;
+    vertex_t *fq_td_out_d; // sub-queue for 'uni-warp' frontier class
+    vertex_t *fq_td_out_curr_sz;
     vertex_t *fq_bu_d; // frontier queue for bottom-up traversal
     vertex_t *temp_fq_bu_d; // used at the start of every iteration
     vertex_t *fq_bu_curr_sz; // used for the bottom-up queue size
                             // synchronized index of frontier queue for bottom-up traversal,
                             // the size must be 1, used for sync-ing atomic operations at the first level of bottom-up traversal
     vertex_t *temp_fq_bu_curr_sz;
-    vertex_t *hub_hash;
-    vertex_t *temp_hub_hash;
-
-    cudaStream_t *stream;
 
     alloc<vertex_t, index_t, depth_t>::
     alloc_mem(
@@ -324,24 +232,17 @@ int bfs( // breadth-first search on GPU
             csr,
             vert_count,
             edge_count,
-            stream,
-            fq_td_d,
+            fq_td_in_d,
             temp_fq_td_d,
-            fq_td_curr_sz,
+            fq_td_in_curr_sz,
             temp_fq_td_curr_sz,
             fq_td_sz_h,
-            fq_td_th_d,
-            fq_td_th_curr_sz,
-            fq_td_uw_d,
-            fq_td_uw_curr_sz,
-            fq_td_mw_d,
-            fq_td_mw_curr_sz,
+            fq_td_out_d,
+            fq_td_out_curr_sz,
             fq_bu_d,
             temp_fq_bu_d,
             fq_bu_curr_sz,
-            temp_fq_bu_curr_sz,
-            hub_hash,
-            temp_hub_hash
+            temp_fq_bu_curr_sz
     );
 
     mcpy_init_temp<vertex_t, index_t, depth_t>
@@ -351,8 +252,7 @@ int bfs( // breadth-first search on GPU
             temp_fq_td_d,
             temp_fq_td_curr_sz,
             temp_fq_bu_d,
-            temp_fq_bu_curr_sz,
-            temp_hub_hash
+            temp_fq_bu_curr_sz
     );
     cudaDeviceSynchronize();
 
@@ -369,7 +269,6 @@ int bfs( // breadth-first search on GPU
     for(index_t i = 0; i < NUM_ITER; i++){
         H_ERR(cudaMemcpy(sa_d, temp_sa, sizeof(depth_t) * vert_count, cudaMemcpyHostToDevice));
         H_ERR(cudaMemcpy(sa_h, temp_sa, sizeof(depth_t) * vert_count, cudaMemcpyHostToHost));
-        H_ERR(cudaMemcpy(hub_hash, temp_hub_hash, sizeof(vertex_t) * HUB_SZ, cudaMemcpyDeviceToDevice));
 
         level = 0;
         std::cout << "<<Iteration " << i << ">>" << std::endl;
@@ -384,24 +283,18 @@ int bfs( // breadth-first search on GPU
                 offset_d,
                 adj_deg_d,
                 vert_count,
-                stream,
                 level,
-                fq_td_d,
+                fq_td_in_d,
                 temp_fq_td_d,
-                fq_td_curr_sz,
+                fq_td_in_curr_sz,
                 temp_fq_td_curr_sz,
                 fq_td_sz_h,
-                fq_td_th_d,
-                fq_td_th_curr_sz,
-                fq_td_uw_d,
-                fq_td_uw_curr_sz,
-                fq_td_mw_d,
-                fq_td_mw_curr_sz,
+                fq_td_out_d,
+                fq_td_out_curr_sz,
                 fq_bu_d,
                 temp_fq_bu_d,
                 fq_bu_curr_sz,
-                temp_fq_bu_curr_sz,
-                hub_hash
+                temp_fq_bu_curr_sz
         );
 
         t_end = wtime();
@@ -413,7 +306,7 @@ int bfs( // breadth-first search on GPU
         H_ERR(cudaMemcpy(sa_h, sa_d, sizeof(depth_t) * vert_count, cudaMemcpyDeviceToHost));
 
         for(index_t j = 0; j < vert_count; j++){
-            if(sa_h[j] != SAB_INIT){
+            if(sa_h[j] != INFTY){
 
                 tr_vert++;
                 tr_edge += adj_deg_h[j];
@@ -443,24 +336,17 @@ int bfs( // breadth-first search on GPU
             adj_deg_d,
             adj_deg_h,
             offset_d,
-            stream,
-            fq_td_d,
+            fq_td_in_d,
             temp_fq_td_d,
-            fq_td_curr_sz,
+            fq_td_in_curr_sz,
             temp_fq_td_curr_sz,
             fq_td_sz_h,
-            fq_td_th_d,
-            fq_td_th_curr_sz,
-            fq_td_uw_d,
-            fq_td_uw_curr_sz,
-            fq_td_mw_d,
-            fq_td_mw_curr_sz,
+            fq_td_out_d,
+            fq_td_out_curr_sz,
             fq_bu_d,
             temp_fq_bu_d,
             fq_bu_curr_sz,
-            temp_fq_bu_curr_sz,
-            hub_hash,
-            temp_hub_hash
+            temp_fq_bu_curr_sz
     );
 
     std::cout << "GPU BFS finished" << std::endl;

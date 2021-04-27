@@ -11,7 +11,7 @@ g++ 5.4.0, CUDA 11.2
 ---
 Tested hardware
 -----
-GTX970 (more products wille be tested)
+GTX970, RTX3080 (more products wille be tested)
 
 ---
 Compile

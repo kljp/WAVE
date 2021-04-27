@@ -15,7 +15,7 @@ __global__ void init_fqg(
 }
 
 template<typename vertex_t, typename index_t, typename depth_t>
-__global__ void fqg_td_ao(
+__global__ void fqg_td_wccao( // warp-cooperative chained atomic operations
 
         depth_t *sa_d,
         const vertex_t *adj_list_d,
@@ -72,7 +72,7 @@ __global__ void fqg_td_ao(
 }
 
 template<typename vertex_t, typename index_t, typename depth_t>
-__global__ void fqg_td_ao2(
+__global__ void fqg_td_wcsac( // warp-cooperative status array check
 
         depth_t *sa_d,
         const vertex_t *adj_list_d,
@@ -119,7 +119,7 @@ __global__ void fqg_td_ao2(
 }
 
 template<typename vertex_t, typename index_t, typename depth_t>
-__global__ void fqg_td_ao3(
+__global__ void fqg_td_tcfe( // thread-centric frontier enqueue
 
         depth_t *sa_d,
         const index_t vert_count,

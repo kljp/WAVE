@@ -14,9 +14,9 @@ const index_t  BLKS_NUM = 64; // grid dimension
 const index_t THDS_NUM_FQG =  1024; // block dimension
 const index_t  BLKS_NUM_FQG = 4096; // grid dimension
 
-#define WSZ 16; // warp size
+#define WSZ 32; // warp size
 
-#define NUM_ITER 256
+#define NUM_ITER 64
 #define INFTY (unsigned int) (0xFFFFFFFF)
 
 static void HandleError( cudaError_t err,

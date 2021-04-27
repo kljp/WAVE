@@ -23,7 +23,7 @@ void bfs_td(
 
     if(*fq_td_sz_h < 4096){
 
-        fqg_td_ao<vertex_t, index_t, depth_t>
+        fqg_td_wccao<vertex_t, index_t, depth_t> // warp-cooperative chained atomic operations
         <<<BLKS_NUM_FQG, THDS_NUM_FQG>>>(
 
                 sa_d,
@@ -41,7 +41,7 @@ void bfs_td(
 
     else{
 
-        fqg_td_ao2<vertex_t, index_t, depth_t>
+        fqg_td_wcsac<vertex_t, index_t, depth_t> // warp-cooperative status array check
         <<<BLKS_NUM_FQG, THDS_NUM_FQG>>>(
 
                 sa_d,
@@ -54,7 +54,7 @@ void bfs_td(
         );
         cudaDeviceSynchronize();
 
-        fqg_td_ao3<vertex_t, index_t, depth_t>
+        fqg_td_tcfe<vertex_t, index_t, depth_t> // thread-centric frontier enqueue
         <<<BLKS_NUM_FQG, THDS_NUM_FQG>>>(
 
                 sa_d,
@@ -104,13 +104,18 @@ void bfs_tdbu(
         vertex_t *temp_fq_bu_curr_sz
 ){
 
-    TD_BU = 0;
+    *fq_td_sz_h = 0;
 
     for(level = 0; ; level++){
 
         cudaDeviceSynchronize();
 
 //        std::cout << "level " << (int) level << std::endl;
+
+        if(*fq_td_sz_h < 32764)
+            TD_BU = 0;
+        else
+            ;//TD_BU = 1;
 
         if(!TD_BU){
 
@@ -258,8 +263,8 @@ int bfs( // breadth-first search on GPU
 
     depth_t level;
     double t_st, t_end, t_elpd; // time_start, time_end, time_elapsed
-    double avg_teps = 0.0; // average_teps (traversed edges per second)
-    double curr_teps; // current_teps
+    double avg_gteps = 0.0; // average_teps (traversed edges per second)
+    double curr_gteps; // current_teps
 
     warm_up_gpu<<<BLKS_NUM, THDS_NUM>>>();
     cudaDeviceSynchronize();
@@ -271,6 +276,7 @@ int bfs( // breadth-first search on GPU
         H_ERR(cudaMemcpy(sa_h, temp_sa, sizeof(depth_t) * vert_count, cudaMemcpyHostToHost));
 
         level = 0;
+        std::cout << "===========================================================" << std::endl;
         std::cout << "<<Iteration " << i << ">>" << std::endl;
         std::cout << "Started from " << src_list[i] << std::endl;
         t_st = wtime();
@@ -312,17 +318,21 @@ int bfs( // breadth-first search on GPU
                 tr_edge += adj_deg_h[j];
             }
         }
+
         std::cout << "The number of traversed vertices: " << tr_vert << std::endl;
         std::cout << "The number of traversed edges: " << tr_edge << std::endl;
         t_elpd = t_end - t_st;
-        curr_teps = (double) tr_edge / t_elpd;
-        avg_teps += curr_teps;
+        curr_gteps = (double) (tr_edge / t_elpd) / 1000000000;
+        avg_gteps += curr_gteps;
         std::cout << "Consumed time (s): " << t_elpd << std::endl;
-        std::cout << "Current TEPS (biliion): " << curr_teps / 1000000000 << std::endl;
+        std::cout << "Current GTEPS: " << curr_gteps << std::endl;
     }
 
-    avg_teps /= NUM_ITER;
-    std::cout << "Average TEPS (biliion): " << avg_teps / 1000000000 << std::endl;
+    avg_gteps /= NUM_ITER;
+    std::cout << "===========================================================" << std::endl;
+
+    std::cout << "Average GTEPS: " << avg_gteps << std::endl;
+    std::cout << "===========================================================" << std::endl;
 
     ///// iteration ends ///////////////////////////////////////////////////////////////////////////////////////////////
 

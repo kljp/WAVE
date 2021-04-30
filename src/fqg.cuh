@@ -234,3 +234,7 @@ __global__ void fqg_rev_tcfe( // thread-centric frontier enqueue
         tid += grnt;
     }
 }
+
+__global__ void asd(vertex_t *arr){
+    *arr = 0;
+}

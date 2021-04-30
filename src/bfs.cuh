@@ -85,6 +85,9 @@ void bfs_bu(
         vertex_t *fq_bu_curr_sz
 ){
 
+//    asd<<<1, 1>>>(fq_bu_curr_sz);
+//    cudaDeviceSynchronize();
+
     fqg_bu<vertex_t, index_t, depth_t>
     <<<BLKS_NUM_FQG, THDS_NUM_FQG>>>(
 
@@ -100,10 +103,10 @@ void bfs_bu(
 
     unsigned int blks;
     unsigned int rdce_sz_st = WARPS_NUM_BU;
-    unsigned int rdce_sz = rdce_sz_st;
 
-    if(rdce_sz > MAX_THDS_PER_BLKS){
+    if(rdce_sz_st > MAX_THDS_PER_BLKS){
 
+        unsigned int rdce_sz = rdce_sz_st;
         blks = rdce_sz / MAX_THDS_PER_BLKS;
 
         if(blks >= 8)
@@ -114,15 +117,18 @@ void bfs_bu(
             rdce_ur_2<<<blks / 2, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
 
         rdce_sz /= MAX_THDS_PER_BLKS;
-    }
-    cudaDeviceSynchronize();
-
-    if(rdce_sz_st > MAX_THDS_PER_BLKS)
         rdce_il<<<1, rdce_sz>>>(rdce_success_bu_d, fq_bu_curr_sz, rdce_sz);
+    }
     else
-        rdce_il<<<1, rdce_sz>>>(success_bu_d, fq_bu_curr_sz, rdce_sz);
-
+        rdce_il<<<1, rdce_sz_st>>>(success_bu_d, fq_bu_curr_sz, rdce_sz_st);
     cudaDeviceSynchronize();
+
+//    if(rdce_sz_st > MAX_THDS_PER_BLKS)
+//        rdce_il<<<1, rdce_sz>>>(rdce_success_bu_d, fq_bu_curr_sz, rdce_sz);
+//    else
+//        rdce_il<<<1, rdce_sz>>>(success_bu_d, fq_bu_curr_sz, rdce_sz);
+//
+//    cudaDeviceSynchronize();
 
     H_ERR(cudaMemcpy(fq_sz_h, fq_bu_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
 }

@@ -19,14 +19,11 @@ struct alloc{
         vertex_t* &fq_td_in_d,
         vertex_t* &temp_fq_td_d,
         vertex_t* &fq_td_in_curr_sz,
-        vertex_t* &temp_fq_td_curr_sz,
-        vertex_t* &fq_td_sz_h,
+        vertex_t* &temp_fq_curr_sz,
+        vertex_t* &fq_sz_h,
         vertex_t* &fq_td_out_d,
         vertex_t* &fq_td_out_curr_sz,
-        vertex_t* &fq_bu_d,
-        vertex_t* &temp_fq_bu_d,
-        vertex_t* &fq_bu_curr_sz,
-        vertex_t* &temp_fq_bu_curr_sz
+        vertex_t* &fq_bu_curr_sz
     ){
 
         long cpu_bytes = 0;
@@ -68,21 +65,15 @@ struct alloc{
         gpu_bytes += sizeof(vertex_t) * vert_count;
         H_ERR(cudaMalloc((void **) &fq_td_in_curr_sz, sizeof(vertex_t)));
         gpu_bytes += sizeof(vertex_t);
-        H_ERR(cudaMalloc((void **) &temp_fq_td_curr_sz, sizeof(vertex_t)));
+        H_ERR(cudaMalloc((void **) &temp_fq_curr_sz, sizeof(vertex_t)));
         gpu_bytes += sizeof(vertex_t);
-        H_ERR(cudaMallocHost((void **) &fq_td_sz_h, sizeof(vertex_t)));
+        H_ERR(cudaMallocHost((void **) &fq_sz_h, sizeof(vertex_t)));
         cpu_bytes += sizeof(vertex_t);
         H_ERR(cudaMalloc((void **) &fq_td_out_d, sizeof(vertex_t) * vert_count));
         gpu_bytes += sizeof(vertex_t) * vert_count;
         H_ERR(cudaMalloc((void **) &fq_td_out_curr_sz, sizeof(vertex_t)));
         gpu_bytes += sizeof(vertex_t);
-        H_ERR(cudaMalloc((void **) &fq_bu_d, sizeof(vertex_t) * vert_count));
-        gpu_bytes += sizeof(vertex_t) * vert_count;
-        H_ERR(cudaMalloc((void **) &temp_fq_bu_d, sizeof(vertex_t) * vert_count));
-        gpu_bytes += sizeof(vertex_t) * vert_count;
         H_ERR(cudaMalloc((void **) &fq_bu_curr_sz, sizeof(vertex_t)));
-        gpu_bytes += sizeof(vertex_t);
-        H_ERR(cudaMalloc((void **) &temp_fq_bu_curr_sz, sizeof(vertex_t)));
         gpu_bytes += sizeof(vertex_t);
 
         std::cout << "CPU alloc space: " << cpu_bytes << " bytes" << std::endl;
@@ -101,14 +92,11 @@ struct alloc{
         vertex_t* &fq_td_in_d,
         vertex_t* &temp_fq_td_d,
         vertex_t* &fq_td_in_curr_sz,
-        vertex_t* &temp_fq_td_curr_sz,
-        vertex_t* &fq_td_sz_h,
+        vertex_t* &temp_fq_curr_sz,
+        vertex_t* &fq_sz_h,
         vertex_t* &fq_td_out_d,
         vertex_t* &fq_td_out_curr_sz,
-        vertex_t* &fq_bu_d,
-        vertex_t* &temp_fq_bu_d,
-        vertex_t* &fq_bu_curr_sz,
-        vertex_t* &temp_fq_bu_curr_sz
+        vertex_t* &fq_bu_curr_sz
     ){
 
         cudaFree(sa_d);
@@ -121,13 +109,10 @@ struct alloc{
         cudaFree(fq_td_in_d);
         cudaFree(temp_fq_td_d);
         cudaFree(fq_td_in_curr_sz);
-        cudaFree(temp_fq_td_curr_sz);
-        cudaFree(fq_td_sz_h);
+        cudaFree(temp_fq_curr_sz);
+        cudaFree(fq_sz_h);
         cudaFree(fq_td_out_d);
         cudaFree(fq_td_out_curr_sz);
-        cudaFree(fq_bu_d);
-        cudaFree(temp_fq_bu_d);
         cudaFree(fq_bu_curr_sz);
-        cudaFree(temp_fq_bu_curr_sz);
     }
 };

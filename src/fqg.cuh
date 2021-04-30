@@ -15,6 +15,17 @@ __global__ void init_fqg(
 }
 
 template<typename vertex_t, typename index_t, typename depth_t>
+__global__ void init_fqg_2(
+
+        vertex_t *fq_td_d,
+        vertex_t *fq_td_curr_sz
+){
+
+    fq_td_d[0] = -1;
+    *fq_td_curr_sz = 0;
+}
+
+template<typename vertex_t, typename index_t, typename depth_t>
 __global__ void fqg_td_wccao( // warp-cooperative chained atomic operations
 
         depth_t *sa_d,

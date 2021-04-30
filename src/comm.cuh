@@ -14,7 +14,11 @@ const index_t  BLKS_NUM = 64; // grid dimension
 const index_t THDS_NUM_FQG =  1024; // block dimension
 const index_t  BLKS_NUM_FQG = 4096; // grid dimension
 
-#define WSZ 32; // warp size
+const float par_alpha = 0.001;
+const float par_beta = 0.05;
+
+#define WSZ 32 // warp size
+const __device__ index_t WARPS_NUM_BU = THDS_NUM_FQG * BLKS_NUM_FQG / WSZ;
 
 #define NUM_ITER 64
 #define INFTY (unsigned int) (0xFFFFFFFF)

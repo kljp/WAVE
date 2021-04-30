@@ -160,7 +160,8 @@ __global__ void fqg_bu( // warp-cooperative neighbor check
         const index_t *adj_deg_d,
         const index_t vert_count,
         const depth_t level,
-        vertex_t *success_bu_d
+        vertex_t *success_bu_d,
+        vertex_t *fq_bu_curr_sz
 ){
 
     index_t tid = threadIdx.x + blockIdx.x * blockDim.x;
@@ -211,6 +212,9 @@ __global__ void fqg_bu( // warp-cooperative neighbor check
 
         wid += grnt;
     }
+
+    if(lid_st == 0)
+        atomicAdd(fq_bu_curr_sz, success_bu_d[wid]);
 }
 
 template<typename vertex_t, typename index_t, typename depth_t>

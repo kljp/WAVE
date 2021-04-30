@@ -167,7 +167,8 @@ __global__ void fqg_bu( // warp-cooperative neighbor check
     index_t tid = threadIdx.x + blockIdx.x * blockDim.x;
     index_t lid_st = tid % WSZ; // laneID
     index_t lid;
-    index_t wid = tid / WSZ; // warpID
+    index_t wid_st = tid / WSZ; // warpID
+    index_t wid = wid_st;
     const index_t grnt = blockDim.x * gridDim.x / WSZ; // granularity
 
     index_t deg_curr;
@@ -176,8 +177,8 @@ __global__ void fqg_bu( // warp-cooperative neighbor check
     vertex_t nbid; // neighbor vertex id
     index_t pred;
 
-    if(lid_st == 0)
-        success_bu_d[wid] = 0;
+    if(lid_st == 0 && wid_st < vert_count)
+        success_bu_d[wid_st] = 0;
 
     while(wid < vert_count){
 
@@ -201,7 +202,7 @@ __global__ void fqg_bu( // warp-cooperative neighbor check
                 if(__ballot_sync(0xFFFFFFFF, pred) != 0){
 
                     if(lid_st == 0)
-                        success_bu_d[wid]++;
+                        success_bu_d[wid_st]++;
 
                     break;
                 }
@@ -213,8 +214,8 @@ __global__ void fqg_bu( // warp-cooperative neighbor check
         wid += grnt;
     }
 
-    if(lid_st == 0)
-        atomicAdd(fq_bu_curr_sz, success_bu_d[wid]);
+//    if(lid_st == 0 && wid_st < vert_count)
+//        atomicAdd(fq_bu_curr_sz, success_bu_d[wid_st]);
 }
 
 template<typename vertex_t, typename index_t, typename depth_t>

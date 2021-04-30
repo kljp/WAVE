@@ -16,14 +16,16 @@ struct alloc{
         vertex_t* csr, // csr - edges
         index_t vert_count, // the number of vertices
         index_t edge_count, // the number of edges
-        vertex_t* &fq_td_in_d,
+        vertex_t* &fq_td_1_d,
         vertex_t* &temp_fq_td_d,
-        vertex_t* &fq_td_in_curr_sz,
+        vertex_t* &fq_td_1_curr_sz,
         vertex_t* &temp_fq_curr_sz,
         vertex_t* &fq_sz_h,
-        vertex_t* &fq_td_out_d,
-        vertex_t* &fq_td_out_curr_sz,
-        vertex_t* &fq_bu_curr_sz
+        vertex_t* &fq_td_2_d,
+        vertex_t* &fq_td_2_curr_sz,
+        vertex_t* &fq_bu_curr_sz,
+        vertex_t* &success_bu_d,
+        vertex_t* &rdce_success_bu_d
     ){
 
         long cpu_bytes = 0;
@@ -59,22 +61,26 @@ struct alloc{
         H_ERR(cudaMallocHost((void **) &sa_h, sizeof(depth_t) * vert_count));
         cpu_bytes += sizeof(depth_t) * vert_count * 2;
 
-        H_ERR(cudaMalloc((void **) &fq_td_in_d, sizeof(vertex_t) * vert_count));
+        H_ERR(cudaMalloc((void **) &fq_td_1_d, sizeof(vertex_t) * vert_count));
         gpu_bytes += sizeof(vertex_t) * vert_count;
         H_ERR(cudaMalloc((void **) &temp_fq_td_d, sizeof(vertex_t) * vert_count));
         gpu_bytes += sizeof(vertex_t) * vert_count;
-        H_ERR(cudaMalloc((void **) &fq_td_in_curr_sz, sizeof(vertex_t)));
+        H_ERR(cudaMalloc((void **) &fq_td_1_curr_sz, sizeof(vertex_t)));
         gpu_bytes += sizeof(vertex_t);
         H_ERR(cudaMalloc((void **) &temp_fq_curr_sz, sizeof(vertex_t)));
         gpu_bytes += sizeof(vertex_t);
         H_ERR(cudaMallocHost((void **) &fq_sz_h, sizeof(vertex_t)));
         cpu_bytes += sizeof(vertex_t);
-        H_ERR(cudaMalloc((void **) &fq_td_out_d, sizeof(vertex_t) * vert_count));
+        H_ERR(cudaMalloc((void **) &fq_td_2_d, sizeof(vertex_t) * vert_count));
         gpu_bytes += sizeof(vertex_t) * vert_count;
-        H_ERR(cudaMalloc((void **) &fq_td_out_curr_sz, sizeof(vertex_t)));
+        H_ERR(cudaMalloc((void **) &fq_td_2_curr_sz, sizeof(vertex_t)));
         gpu_bytes += sizeof(vertex_t);
         H_ERR(cudaMalloc((void **) &fq_bu_curr_sz, sizeof(vertex_t)));
         gpu_bytes += sizeof(vertex_t);
+        H_ERR(cudaMalloc((void **) &success_bu_d, sizeof(vertex_t) * WARPS_NUM_BU));
+        gpu_bytes += sizeof(vertex_t) * WARPS_NUM_BU;
+        H_ERR(cudaMalloc((void **) &rdce_success_bu_d, sizeof(vertex_t) * WARPS_NUM_BU / MAX_THDS_PER_BLKS));
+        gpu_bytes += sizeof(vertex_t) * WARPS_NUM_BU / MAX_THDS_PER_BLKS;
 
         std::cout << "CPU alloc space: " << cpu_bytes << " bytes" << std::endl;
         std::cout << "GPU alloc space: " << gpu_bytes << " bytes" << std::endl;
@@ -89,14 +95,16 @@ struct alloc{
         index_t* &adj_deg_d,
         index_t* &adj_deg_h,
         index_t* &offset_d,
-        vertex_t* &fq_td_in_d,
+        vertex_t* &fq_td_1_d,
         vertex_t* &temp_fq_td_d,
-        vertex_t* &fq_td_in_curr_sz,
+        vertex_t* &fq_td_1_curr_sz,
         vertex_t* &temp_fq_curr_sz,
         vertex_t* &fq_sz_h,
-        vertex_t* &fq_td_out_d,
-        vertex_t* &fq_td_out_curr_sz,
-        vertex_t* &fq_bu_curr_sz
+        vertex_t* &fq_td_2_d,
+        vertex_t* &fq_td_2_curr_sz,
+        vertex_t* &fq_bu_curr_sz,
+        vertex_t* &success_bu_d,
+        vertex_t* &rdce_success_bu_d
     ){
 
         cudaFree(sa_d);
@@ -106,13 +114,15 @@ struct alloc{
         cudaFree(adj_deg_d);
         cudaFree(adj_deg_h);
         cudaFree(offset_d);
-        cudaFree(fq_td_in_d);
+        cudaFree(fq_td_1_d);
         cudaFree(temp_fq_td_d);
-        cudaFree(fq_td_in_curr_sz);
+        cudaFree(fq_td_1_curr_sz);
         cudaFree(temp_fq_curr_sz);
         cudaFree(fq_sz_h);
-        cudaFree(fq_td_out_d);
-        cudaFree(fq_td_out_curr_sz);
+        cudaFree(fq_td_2_d);
+        cudaFree(fq_td_2_curr_sz);
         cudaFree(fq_bu_curr_sz);
+        cudaFree(success_bu_d);
+        cudaFree(rdce_success_bu_d);
     }
 };

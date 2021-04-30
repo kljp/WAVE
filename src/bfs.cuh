@@ -4,6 +4,7 @@
 #include "comm.cuh"
 #include "fqg.cuh"
 #include "mcpy.cuh"
+#include "rdce.cuh"
 
 template<typename vertex_t, typename index_t, typename depth_t>
 void bfs_td(
@@ -66,17 +67,6 @@ void bfs_td(
         cudaDeviceSynchronize();
     }
 
-//    mcpy_init_fq_td<vertex_t, index_t, depth_t>
-//    <<<BLKS_NUM, THDS_NUM>>>(
-//
-//            vert_count,
-//            fq_td_out_d,
-//            fq_td_out_curr_sz,
-//            fq_td_in_d,
-//            fq_td_in_curr_sz
-//    );
-//    cudaDeviceSynchronize();
-
     H_ERR(cudaMemcpy(fq_sz_h, fq_td_in_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
 }
 
@@ -87,32 +77,105 @@ void bfs_bu(
         const vertex_t *adj_list_d,
         const index_t *offset_d,
         const index_t *adj_deg_d,
-        const index_t vert_count
+        const index_t vert_count,
+        depth_t &level,
+        vertex_t *fq_sz_h,
+        vertex_t *success_bu_d,
+        vertex_t *rdce_success_bu_d,
+        vertex_t *fq_bu_curr_sz
 ){
-    ;
+
+    fqg_bu<vertex_t, index_t, depth_t>
+    <<<BLKS_NUM_FQG, THDS_NUM_FQG>>>(
+
+            sa_d,
+            adj_list_d,
+            offset_d,
+            adj_deg_d,
+            vert_count,
+            level,
+            success_bu_d
+    );
+    cudaDeviceSynchronize();
+
+    unsigned int blks;
+    unsigned int rdce_sz_st = WARPS_NUM_BU;
+    unsigned int rdce_sz = rdce_sz_st;
+
+    if(rdce_sz > MAX_THDS_PER_BLKS){
+
+        blks = rdce_sz / MAX_THDS_PER_BLKS;
+
+        if(blks >= 8)
+            rdce_ur_wp_8<<<blks / 8, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
+        else if(blks >= 4)
+            rdce_ur_4<<<blks / 4, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
+        else
+            rdce_ur_2<<<blks / 2, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
+
+        rdce_sz /= MAX_THDS_PER_BLKS;
+    }
+    cudaDeviceSynchronize();
+
+    if(rdce_sz_st > MAX_THDS_PER_BLKS)
+        rdce_il<<<1, rdce_sz>>>(rdce_success_bu_d, fq_bu_curr_sz, rdce_sz);
+    else
+        rdce_il<<<1, rdce_sz>>>(success_bu_d, fq_bu_curr_sz, rdce_sz);
+
+    cudaDeviceSynchronize();
+
+    H_ERR(cudaMemcpy(fq_sz_h, fq_bu_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
+}
+
+template<typename vertex_t, typename index_t, typename depth_t>
+void bfs_rev(
+
+        depth_t *sa_d,
+        const index_t vert_count,
+        depth_t &level,
+        vertex_t *fq_sz_h,
+        vertex_t *fq_td_in_d,
+        vertex_t *fq_td_in_curr_sz
+){
+
+    fqg_rev_tcfe<vertex_t, index_t, depth_t> // thread-centric frontier enqueue
+    <<<BLKS_NUM_FQG, THDS_NUM_FQG>>>(
+
+            sa_d,
+            vert_count,
+            level,
+            fq_td_in_d,
+            fq_td_in_curr_sz
+    );
+    cudaDeviceSynchronize();
+
+    H_ERR(cudaMemcpy(fq_sz_h, fq_td_in_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
 }
 
 template<typename vertex_t, typename index_t, typename depth_t>
 void bfs_tdbu(
 
-        vertex_t src,
         depth_t *sa_d,
         const vertex_t *adj_list_d,
         const index_t *offset_d,
         const index_t *adj_deg_d,
         const index_t vert_count,
         depth_t &level,
-        vertex_t *fq_td_in_d,
+        vertex_t *fq_td_1_d,
         vertex_t *temp_fq_td_d,
-        vertex_t *fq_td_in_curr_sz,
+        vertex_t *fq_td_1_curr_sz,
         vertex_t *temp_fq_curr_sz,
         vertex_t *fq_sz_h,
-        vertex_t *fq_td_out_d,
-        vertex_t *fq_td_out_curr_sz,
-        vertex_t *fq_bu_curr_sz
+        vertex_t *fq_td_2_d,
+        vertex_t *fq_td_2_curr_sz,
+        vertex_t *fq_bu_curr_sz,
+        vertex_t *success_bu_d,
+        vertex_t *rdce_success_bu_d
 ){
 
     index_t fq_swap = 1;
+    index_t reversed = 0;
+    TD_BU = 0;
 
     *fq_sz_h = 1;
 
@@ -120,10 +183,15 @@ void bfs_tdbu(
 
         cudaDeviceSynchronize();
 
-        if(*fq_sz_h < (vertex_t) (par_beta * vert_count))
+        if(*fq_sz_h < (vertex_t) (par_beta * vert_count)){
+
+            if(TD_BU)
+                reversed = 1;
+
             TD_BU = 0;
+        }
         else
-            ;//TD_BU = 1;
+            TD_BU = 1;
 
         if(!TD_BU){
 
@@ -134,32 +202,9 @@ void bfs_tdbu(
 
             if(level != 0){
 
-                if(fq_swap == 0){
+                if(reversed == 0){
 
-                    mcpy_init_fq_td<vertex_t, index_t, depth_t>
-                    <<<BLKS_NUM, THDS_NUM>>>(
-
-                            vert_count,
-                            temp_fq_td_d,
-                            temp_fq_curr_sz,
-                            fq_td_out_d,
-                            fq_td_out_curr_sz
-                    );
-                }
-
-                else{
-
-                    if(level == 1){
-
-                        init_fqg_2<vertex_t, index_t, depth_t>
-                        <<<1, 1>>>(
-
-                                fq_td_in_d,
-                                fq_td_in_curr_sz
-                        );
-                    }
-
-                    else{
+                    if(fq_swap == 0){
 
                         mcpy_init_fq_td<vertex_t, index_t, depth_t>
                         <<<BLKS_NUM, THDS_NUM>>>(
@@ -167,10 +212,71 @@ void bfs_tdbu(
                                 vert_count,
                                 temp_fq_td_d,
                                 temp_fq_curr_sz,
-                                fq_td_in_d,
-                                fq_td_in_curr_sz
+                                fq_td_2_d,
+                                fq_td_2_curr_sz
                         );
                     }
+
+                    else{
+
+                        if(level == 1){
+
+                            init_fqg_2<vertex_t, index_t, depth_t>
+                            <<<1, 1>>>(
+
+                                    fq_td_1_d,
+                                    fq_td_1_curr_sz
+                            );
+                        }
+
+                        else{
+
+                            mcpy_init_fq_td<vertex_t, index_t, depth_t>
+                            <<<BLKS_NUM, THDS_NUM>>>(
+
+                                    vert_count,
+                                    temp_fq_td_d,
+                                    temp_fq_curr_sz,
+                                    fq_td_1_d,
+                                    fq_td_1_curr_sz
+                            );
+                        }
+                    }
+                }
+
+                else{
+
+                    reversed = 0;
+                    fq_swap = 0;
+
+                    mcpy_init_fq_td<vertex_t, index_t, depth_t>
+                    <<<BLKS_NUM, THDS_NUM>>>(
+
+                            vert_count,
+                            temp_fq_td_d,
+                            temp_fq_curr_sz,
+                            fq_td_2_d,
+                            fq_td_2_curr_sz
+                    );
+                    mcpy_init_fq_td<vertex_t, index_t, depth_t>
+                    <<<BLKS_NUM, THDS_NUM>>>(
+
+                            vert_count,
+                            temp_fq_td_d,
+                            temp_fq_curr_sz,
+                            fq_td_1_d,
+                            fq_td_1_curr_sz
+                    );
+
+                    bfs_rev<vertex_t, index_t, depth_t>(
+
+                            sa_d,
+                            vert_count,
+                            level,
+                            fq_sz_h,
+                            fq_td_1_d,
+                            fq_td_1_curr_sz
+                    );
                 }
             }
 
@@ -186,11 +292,11 @@ void bfs_tdbu(
                         adj_deg_d,
                         vert_count,
                         level,
-                        fq_td_in_d,
-                        fq_td_in_curr_sz,
+                        fq_td_1_d,
+                        fq_td_1_curr_sz,
                         fq_sz_h,
-                        fq_td_out_d,
-                        fq_td_out_curr_sz
+                        fq_td_2_d,
+                        fq_td_2_curr_sz
                 );
             }
 
@@ -204,11 +310,11 @@ void bfs_tdbu(
                         adj_deg_d,
                         vert_count,
                         level,
-                        fq_td_out_d,
-                        fq_td_out_curr_sz,
+                        fq_td_2_d,
+                        fq_td_2_curr_sz,
                         fq_sz_h,
-                        fq_td_in_d,
-                        fq_td_in_curr_sz
+                        fq_td_1_d,
+                        fq_td_1_curr_sz
                 );
             }
         }
@@ -221,20 +327,26 @@ void bfs_tdbu(
             );
             cudaDeviceSynchronize();
 
-            // BU process
+            bfs_bu<vertex_t, index_t, depth_t>(
 
-            // fq_bu_curr_sz memcpy from device to host
+                    sa_d,
+                    adj_list_d,
+                    offset_d,
+                    adj_deg_d,
+                    vert_count,
+                    level,
+                    fq_sz_h,
+                    success_bu_d,
+                    rdce_success_bu_d,
+                    fq_bu_curr_sz
+            );
             cudaDeviceSynchronize();
-            H_ERR(cudaMemcpy(fq_sz_h, fq_bu_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
         }
 
         if(!TD_BU){
 
             if(*fq_sz_h == 0)
                 break;
-        }
-        else {
-            ;
         }
     }
 }
@@ -252,8 +364,12 @@ int bfs( // breadth-first search on GPU
 ){
 
     cudaSetDevice(gpu_id);
-//    copy_sm_sz<<<1, 1>>>(calc_sm_sz(gpu_id));
-//    cudaDeviceSynchronize();
+
+    if(WARPS_NUM_BU > MAX_THDS_RD){ // MAX_THDS_RD will be scaled to 1024 * 1024 * 1024, in the future.
+
+        std::cout << "The number of warps for reduction in bottom-up exceeds the maximum value." << std::endl;
+        return 0;
+    }
 
     depth_t *sa_d; // status array on GPU
     depth_t *sa_h; // status array on CPU
@@ -262,15 +378,17 @@ int bfs( // breadth-first search on GPU
     index_t *adj_deg_h;
     vertex_t *adj_list_d; // adjacent lists
     index_t *offset_d; // offset
-    vertex_t *fq_td_in_d; // frontier queue for top-down traversal
-    vertex_t *temp_fq_td_d; // used at the start of every level
-    vertex_t *fq_td_in_curr_sz; // used for the top-down queue size
+    vertex_t *fq_td_1_d; // frontier queue for top-down traversal
+    vertex_t *fq_td_1_curr_sz; // used for the top-down queue size
                             // synchronized index of frontier queue for top-down traversal, the size must be 1
+    vertex_t *fq_td_2_d;
+    vertex_t *fq_td_2_curr_sz;
+    vertex_t *temp_fq_td_d;
     vertex_t *temp_fq_curr_sz;
     vertex_t *fq_sz_h;
-    vertex_t *fq_td_out_d; // sub-queue for 'uni-warp' frontier class
-    vertex_t *fq_td_out_curr_sz;
     vertex_t *fq_bu_curr_sz; // used for the number of vertices examined at each level, the size must be 1
+    vertex_t *success_bu_d;
+    vertex_t *rdce_success_bu_d;
 
     alloc<vertex_t, index_t, depth_t>::
     alloc_mem(
@@ -286,14 +404,16 @@ int bfs( // breadth-first search on GPU
             csr,
             vert_count,
             edge_count,
-            fq_td_in_d,
+            fq_td_1_d,
             temp_fq_td_d,
-            fq_td_in_curr_sz,
+            fq_td_1_curr_sz,
             temp_fq_curr_sz,
             fq_sz_h,
-            fq_td_out_d,
-            fq_td_out_curr_sz,
-            fq_bu_curr_sz
+            fq_td_2_d,
+            fq_td_2_curr_sz,
+            fq_bu_curr_sz,
+            success_bu_d,
+            rdce_success_bu_d
     );
 
     mcpy_init_temp<vertex_t, index_t, depth_t>
@@ -325,8 +445,8 @@ int bfs( // breadth-first search on GPU
                 vert_count,
                 temp_fq_td_d,
                 temp_fq_curr_sz,
-                fq_td_in_d,
-                fq_td_in_curr_sz
+                fq_td_1_d,
+                fq_td_1_curr_sz
         );
         cudaDeviceSynchronize();
 
@@ -336,8 +456,8 @@ int bfs( // breadth-first search on GPU
                 vert_count,
                 temp_fq_td_d,
                 temp_fq_curr_sz,
-                fq_td_out_d,
-                fq_td_out_curr_sz
+                fq_td_2_d,
+                fq_td_2_curr_sz
         );
         cudaDeviceSynchronize();
 
@@ -346,8 +466,8 @@ int bfs( // breadth-first search on GPU
 
                 src_list[i],
                 sa_d,
-                fq_td_in_d,
-                fq_td_in_curr_sz
+                fq_td_1_d,
+                fq_td_1_curr_sz
         );
         cudaDeviceSynchronize();
 
@@ -359,21 +479,22 @@ int bfs( // breadth-first search on GPU
 
         bfs_tdbu<vertex_t, index_t, depth_t>(
 
-                src_list[i],
                 sa_d,
                 adj_list_d,
                 offset_d,
                 adj_deg_d,
                 vert_count,
                 level,
-                fq_td_in_d,
+                fq_td_1_d,
                 temp_fq_td_d,
-                fq_td_in_curr_sz,
+                fq_td_1_curr_sz,
                 temp_fq_curr_sz,
                 fq_sz_h,
-                fq_td_out_d,
-                fq_td_out_curr_sz,
-                fq_bu_curr_sz
+                fq_td_2_d,
+                fq_td_2_curr_sz,
+                fq_bu_curr_sz,
+                success_bu_d,
+                rdce_success_bu_d
         );
 
         t_end = wtime();
@@ -419,14 +540,16 @@ int bfs( // breadth-first search on GPU
             adj_deg_d,
             adj_deg_h,
             offset_d,
-            fq_td_in_d,
+            fq_td_1_d,
             temp_fq_td_d,
-            fq_td_in_curr_sz,
+            fq_td_1_curr_sz,
             temp_fq_curr_sz,
             fq_sz_h,
-            fq_td_out_d,
-            fq_td_out_curr_sz,
-            fq_bu_curr_sz
+            fq_td_2_d,
+            fq_td_2_curr_sz,
+            fq_bu_curr_sz,
+            success_bu_d,
+            rdce_success_bu_d
     );
 
     std::cout << "GPU BFS finished" << std::endl;

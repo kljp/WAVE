@@ -25,7 +25,7 @@ void bfs_td(
     if(*fq_sz_h < (vertex_t) (par_alpha * vert_count)){
 
         fqg_td_wccao<vertex_t, index_t, depth_t> // warp-cooperative chained atomic operations
-        <<<BLKS_NUM_FQG, THDS_NUM_FQG>>>(
+        <<<1, 1024>>>(
 
                 sa_d,
                 adj_list_d,
@@ -43,7 +43,7 @@ void bfs_td(
     else{
 
         fqg_td_wcsac<vertex_t, index_t, depth_t> // warp-cooperative status array check
-        <<<BLKS_NUM_FQG, THDS_NUM_FQG>>>(
+        <<<8192, 1024>>>(
 
                 sa_d,
                 adj_list_d,
@@ -67,7 +67,7 @@ void bfs_td(
         cudaDeviceSynchronize();
     }
 
-    H_ERR(cudaMemcpy(fq_sz_h, fq_td_in_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
+    H_ERR(cudaMemcpy(fq_sz_h, fq_td_out_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
 }
 
 template<typename vertex_t, typename index_t, typename depth_t>
@@ -85,44 +85,60 @@ void bfs_bu(
         vertex_t *fq_bu_curr_sz
 ){
 
-    asd<<<1, 1>>>(fq_bu_curr_sz);
-    cudaDeviceSynchronize();
+    if(*fq_sz_h < (vertex_t) (par_gamma * vert_count)){
 
-    fqg_bu<vertex_t, index_t, depth_t>
-    <<<BLKS_NUM_BU, THDS_NUM_BU>>>(
+        fqg_bu_waar<vertex_t, index_t, depth_t>
+        <<<16384, 128>>>(
 
-            sa_d,
-            adj_list_d,
-            offset_d,
-            adj_deg_d,
-            vert_count,
-            level,
-            success_bu_d,
-            fq_bu_curr_sz
-    );
+                sa_d,
+                adj_list_d,
+                offset_d,
+                adj_deg_d,
+                vert_count,
+                level,
+                success_bu_d,
+                fq_bu_curr_sz
+        );
+    }
+
+    else{
+
+        fqg_bu_wcsa<vertex_t, index_t, depth_t>
+        <<<BLKS_NUM_BU, THDS_NUM_BU>>>(
+
+                sa_d,
+                adj_list_d,
+                offset_d,
+                adj_deg_d,
+                vert_count,
+                level,
+                success_bu_d
+        );
+        cudaDeviceSynchronize();
+
+        unsigned int blks;
+        unsigned int rdce_sz_st = WARPS_NUM_BU;
+
+        if(rdce_sz_st > MAX_THDS_PER_BLKS){
+
+            unsigned int rdce_sz = rdce_sz_st;
+            blks = rdce_sz / MAX_THDS_PER_BLKS;
+
+            if(blks >= 8)
+                rdce_ur_wp_8<<<blks / 8, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
+            else if(blks >= 4)
+                rdce_ur_4<<<blks / 4, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
+            else
+                rdce_ur_2<<<blks / 2, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
+
+            rdce_sz /= MAX_THDS_PER_BLKS;
+            rdce_il<<<1, rdce_sz>>>(rdce_success_bu_d, fq_bu_curr_sz, rdce_sz);
+        }
+        else
+            rdce_il<<<1, rdce_sz_st>>>(success_bu_d, fq_bu_curr_sz, rdce_sz_st);
+    }
+
     cudaDeviceSynchronize();
-//
-//    unsigned int blks;
-//    unsigned int rdce_sz_st = WARPS_NUM_BU;
-//
-//    if(rdce_sz_st > MAX_THDS_PER_BLKS){
-//
-//        unsigned int rdce_sz = rdce_sz_st;
-//        blks = rdce_sz / MAX_THDS_PER_BLKS;
-//
-//        if(blks >= 8)
-//            rdce_ur_wp_8<<<blks / 8, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
-//        else if(blks >= 4)
-//            rdce_ur_4<<<blks / 4, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
-//        else
-//            rdce_ur_2<<<blks / 2, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
-//
-//        rdce_sz /= MAX_THDS_PER_BLKS;
-//        rdce_il<<<1, rdce_sz>>>(rdce_success_bu_d, fq_bu_curr_sz, rdce_sz);
-//    }
-//    else
-//        rdce_il<<<1, rdce_sz_st>>>(success_bu_d, fq_bu_curr_sz, rdce_sz_st);
-//    cudaDeviceSynchronize();
 
     H_ERR(cudaMemcpy(fq_sz_h, fq_bu_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
 }
@@ -181,8 +197,6 @@ void bfs_tdbu(
 
     for(level = 0; ; level++){
 
-        cudaDeviceSynchronize();
-
         if(*fq_sz_h < (vertex_t) (par_beta * vert_count)){
 
             if(TD_BU)
@@ -192,6 +206,18 @@ void bfs_tdbu(
         }
         else
             TD_BU = 1;
+
+
+        if(*fq_sz_h < (vertex_t) (par_alpha * vert_count)){
+            std::cout << "TD 1 " << *fq_sz_h << std::endl;
+        }
+        else if(*fq_sz_h < (vertex_t) (par_beta * vert_count)){
+            std::cout << "TD 2 " << *fq_sz_h << std::endl;
+        }
+        else if(*fq_sz_h < (vertex_t) (par_gamma * vert_count))
+            std::cout << "BU 1 " << *fq_sz_h << std::endl;
+        else
+            std::cout << "BU 2 " << *fq_sz_h << std::endl;
 
         if(!TD_BU){
 
@@ -340,8 +366,8 @@ void bfs_tdbu(
                     rdce_success_bu_d,
                     fq_bu_curr_sz
             );
-            cudaDeviceSynchronize();
         }
+        cudaDeviceSynchronize();
 
         if(!TD_BU){
 

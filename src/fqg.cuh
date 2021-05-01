@@ -132,7 +132,7 @@ __global__ void fqg_td_wcsac( // warp-cooperative status array check
 template<typename vertex_t, typename index_t, typename depth_t>
 __global__ void fqg_td_tcfe( // thread-centric frontier enqueue
 
-        depth_t *sa_d,
+        const depth_t * __restrict__ sa_d,
         const index_t vert_count,
         const depth_t level,
         vertex_t *fq_td_out_d,
@@ -149,73 +149,6 @@ __global__ void fqg_td_tcfe( // thread-centric frontier enqueue
 
         tid += grnt;
     }
-}
-
-template<typename vertex_t, typename index_t, typename depth_t>
-__global__ void fqg_bu_waar( // warp-cooperative atomic reduction
-
-        depth_t *sa_d,
-        const vertex_t *adj_list_d,
-        const index_t *offset_d,
-        const index_t *adj_deg_d,
-        const index_t vert_count,
-        const depth_t level,
-        vertex_t *success_bu_d,
-        vertex_t *fq_bu_curr_sz
-){
-
-    index_t tid = threadIdx.x + blockIdx.x * blockDim.x;
-    index_t lid_st = tid % WSZ; // laneID
-    index_t lid;
-    index_t wid_st = tid / WSZ; // warpID
-    index_t wid = wid_st;
-    const index_t grnt = blockDim.x * gridDim.x / WSZ; // granularity
-
-    index_t deg_curr;
-    index_t beg_pos;
-
-    vertex_t nbid; // neighbor vertex id
-    index_t pred;
-
-    if(lid_st == 0 && wid_st < vert_count)
-        success_bu_d[wid_st] = 0;
-
-    while(wid < vert_count){
-
-        if(sa_d[wid] == INFTY){
-
-            deg_curr = adj_deg_d[wid];
-            beg_pos = offset_d[wid];
-            lid = lid_st;
-
-            while(lid < deg_curr){
-
-                pred = 0;
-                nbid = adj_list_d[beg_pos + lid];
-
-                if(sa_d[nbid] == level){
-
-                    pred = 1;
-                    sa_d[wid] = level + 1;
-                }
-
-                if(__ballot_sync(0xFFFFFFFF, pred) != 0){
-
-                    if(lid_st == 0)
-                        success_bu_d[wid_st]++;
-
-                    break;
-                }
-
-                lid += WSZ;
-            }
-        }
-
-        wid += grnt;
-    }
-
-    if(lid_st == 0 && wid_st < vert_count)
-        atomicAdd(fq_bu_curr_sz, success_bu_d[wid_st]);
 }
 
 template<typename vertex_t, typename index_t, typename depth_t>
@@ -282,23 +215,113 @@ __global__ void fqg_bu_wcsa( // warp-cooperative status array check
 }
 
 template<typename vertex_t, typename index_t, typename depth_t>
-__global__ void fqg_rev_tcfe( // thread-centric frontier enqueue
+__global__ void fqg_bu_wcsa2( // warp-cooperative status array check
 
         depth_t *sa_d,
+        const vertex_t *adj_list_d,
+        const index_t *offset_d,
+        const index_t *adj_deg_d,
         const index_t vert_count,
         const depth_t level,
-        vertex_t *fq_td_in_d,
-        vertex_t *fq_td_in_curr_sz
+        vertex_t *success_bu_d
 ){
 
     index_t tid = threadIdx.x + blockIdx.x * blockDim.x;
+    index_t lid_st = tid % WSZ; // laneID
+    index_t lid;
+    index_t wid_st = tid / WSZ; // warpID
+    index_t wid = wid_st;
+    index_t temp_wid;
+    const index_t grnt = blockDim.x * gridDim.x / WSZ; // granularity
+    index_t count;
+
+    index_t deg_curr;
+    index_t beg_pos;
+
+    vertex_t nbid; // neighbor vertex id
+    index_t pred;
+
+    if(lid_st == 0 && wid_st < vert_count)
+        success_bu_d[wid_st] = 0;
+
+    while(wid < vert_count){
+
+        count = 0;
+
+        while(count < 32){
+
+            temp_wid = wid * 32 + count;
+
+            if(sa_d[temp_wid] == INFTY){
+
+                deg_curr = adj_deg_d[temp_wid];
+                beg_pos = offset_d[temp_wid];
+                lid = lid_st;
+
+                while(lid < deg_curr){
+
+                    pred = 0;
+                    nbid = adj_list_d[beg_pos + lid];
+
+                    if(sa_d[nbid] == level){
+
+                        pred = 1;
+                        sa_d[temp_wid] = level + 1;
+                    }
+
+                    if(__ballot_sync(0xFFFFFFFF, pred) != 0){
+
+                        if(lid_st == 0)
+                            success_bu_d[wid_st]++;
+
+                        break;
+                    }
+
+                    lid += WSZ;
+                }
+            }
+
+            count++;
+        }
+
+        wid += grnt;
+    }
+}
+
+template<typename vertex_t, typename index_t, typename depth_t>
+__global__ void fqg_rev_tcfe( // thread-centric frontier enqueue
+
+        const depth_t * __restrict__ sa_d,
+        const index_t vert_count,
+        const depth_t level,
+        vertex_t *temp_fq_td_d,
+        vertex_t *temp_fq_curr_sz,
+        vertex_t *fq_td_1_d,
+        vertex_t *fq_td_1_curr_sz,
+        vertex_t *fq_td_2_d,
+        vertex_t *fq_td_2_curr_sz
+){
+
+    index_t tid_st = threadIdx.x + blockDim.x * blockIdx.x;
+    index_t tid;
     const index_t grnt = blockDim.x * gridDim.x; // granularity
+
+    tid = tid_st;
 
     while(tid < vert_count){
 
+        fq_td_1_d[tid] = temp_fq_td_d[tid];
+        fq_td_2_d[tid] = temp_fq_td_d[tid];
+
         if(sa_d[tid] == level)
-            fq_td_in_d[atomicAdd(fq_td_in_curr_sz, 1)] = tid;
+            fq_td_1_d[atomicAdd(fq_td_1_curr_sz, 1)] = tid;
 
         tid += grnt;
+    }
+
+    if(tid_st == 0){
+
+        *fq_td_1_curr_sz = *temp_fq_curr_sz;
+        *fq_td_2_curr_sz = *temp_fq_curr_sz;
     }
 }

@@ -85,58 +85,39 @@ void bfs_bu(
         vertex_t *fq_bu_curr_sz
 ){
 
-    if(*fq_sz_h < (vertex_t) (par_gamma * vert_count)){
+    fqg_bu_wcsa<vertex_t, index_t, depth_t>
+    <<<BLKS_NUM_BU, THDS_NUM_BU>>>(
 
-        fqg_bu_waar<vertex_t, index_t, depth_t>
-        <<<16384, 128>>>(
+            sa_d,
+            adj_list_d,
+            offset_d,
+            adj_deg_d,
+            vert_count,
+            level,
+            success_bu_d
+    );
+    cudaDeviceSynchronize();
 
-                sa_d,
-                adj_list_d,
-                offset_d,
-                adj_deg_d,
-                vert_count,
-                level,
-                success_bu_d,
-                fq_bu_curr_sz
-        );
-    }
+    unsigned int blks;
+    unsigned int rdce_sz_st = WARPS_NUM_BU;
 
-    else{
+    if(rdce_sz_st > MAX_THDS_PER_BLKS){
 
-        fqg_bu_wcsa<vertex_t, index_t, depth_t>
-        <<<BLKS_NUM_BU, THDS_NUM_BU>>>(
+        unsigned int rdce_sz = rdce_sz_st;
+        blks = rdce_sz / MAX_THDS_PER_BLKS;
 
-                sa_d,
-                adj_list_d,
-                offset_d,
-                adj_deg_d,
-                vert_count,
-                level,
-                success_bu_d
-        );
-        cudaDeviceSynchronize();
-
-        unsigned int blks;
-        unsigned int rdce_sz_st = WARPS_NUM_BU;
-
-        if(rdce_sz_st > MAX_THDS_PER_BLKS){
-
-            unsigned int rdce_sz = rdce_sz_st;
-            blks = rdce_sz / MAX_THDS_PER_BLKS;
-
-            if(blks >= 8)
-                rdce_ur_wp_8<<<blks / 8, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
-            else if(blks >= 4)
-                rdce_ur_4<<<blks / 4, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
-            else
-                rdce_ur_2<<<blks / 2, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
-
-            rdce_sz /= MAX_THDS_PER_BLKS;
-            rdce_il<<<1, rdce_sz>>>(rdce_success_bu_d, fq_bu_curr_sz, rdce_sz);
-        }
+        if(blks >= 8)
+            rdce_ur_wp_8<<<blks / 8, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
+        else if(blks >= 4)
+            rdce_ur_4<<<blks / 4, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
         else
-            rdce_il<<<1, rdce_sz_st>>>(success_bu_d, fq_bu_curr_sz, rdce_sz_st);
+            rdce_ur_2<<<blks / 2, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
+
+        rdce_sz /= MAX_THDS_PER_BLKS;
+        rdce_il<<<1, rdce_sz>>>(rdce_success_bu_d, fq_bu_curr_sz, rdce_sz);
     }
+    else
+        rdce_il<<<1, rdce_sz_st>>>(success_bu_d, fq_bu_curr_sz, rdce_sz_st);
 
     cudaDeviceSynchronize();
 
@@ -150,8 +131,12 @@ void bfs_rev(
         const index_t vert_count,
         depth_t &level,
         vertex_t *fq_sz_h,
-        vertex_t *fq_td_in_d,
-        vertex_t *fq_td_in_curr_sz
+        vertex_t *temp_fq_td_d,
+        vertex_t *temp_fq_curr_sz,
+        vertex_t *fq_td_1_d,
+        vertex_t *fq_td_1_curr_sz,
+        vertex_t *fq_td_2_d,
+        vertex_t *fq_td_2_curr_sz
 ){
 
     fqg_rev_tcfe<vertex_t, index_t, depth_t> // thread-centric frontier enqueue
@@ -160,12 +145,16 @@ void bfs_rev(
             sa_d,
             vert_count,
             level,
-            fq_td_in_d,
-            fq_td_in_curr_sz
+            temp_fq_td_d,
+            temp_fq_curr_sz,
+            fq_td_1_d,
+            fq_td_1_curr_sz,
+            fq_td_2_d,
+            fq_td_2_curr_sz
     );
     cudaDeviceSynchronize();
 
-    H_ERR(cudaMemcpy(fq_sz_h, fq_td_in_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
+    H_ERR(cudaMemcpy(fq_sz_h, fq_td_1_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
 }
 
 template<typename vertex_t, typename index_t, typename depth_t>
@@ -206,18 +195,6 @@ void bfs_tdbu(
         }
         else
             TD_BU = 1;
-
-
-        if(*fq_sz_h < (vertex_t) (par_alpha * vert_count)){
-            std::cout << "TD 1 " << *fq_sz_h << std::endl;
-        }
-        else if(*fq_sz_h < (vertex_t) (par_beta * vert_count)){
-            std::cout << "TD 2 " << *fq_sz_h << std::endl;
-        }
-        else if(*fq_sz_h < (vertex_t) (par_gamma * vert_count))
-            std::cout << "BU 1 " << *fq_sz_h << std::endl;
-        else
-            std::cout << "BU 2 " << *fq_sz_h << std::endl;
 
         if(!TD_BU){
 
@@ -275,33 +252,18 @@ void bfs_tdbu(
                     reversed = 0;
                     fq_swap = 0;
 
-                    mcpy_init_fq_td<vertex_t, index_t, depth_t>
-                    <<<BLKS_NUM, THDS_NUM>>>(
-
-                            vert_count,
-                            temp_fq_td_d,
-                            temp_fq_curr_sz,
-                            fq_td_2_d,
-                            fq_td_2_curr_sz
-                    );
-                    mcpy_init_fq_td<vertex_t, index_t, depth_t>
-                    <<<BLKS_NUM, THDS_NUM>>>(
-
-                            vert_count,
-                            temp_fq_td_d,
-                            temp_fq_curr_sz,
-                            fq_td_1_d,
-                            fq_td_1_curr_sz
-                    );
-
                     bfs_rev<vertex_t, index_t, depth_t>(
 
                             sa_d,
                             vert_count,
                             level,
                             fq_sz_h,
+                            temp_fq_td_d,
+                            temp_fq_curr_sz,
                             fq_td_1_d,
-                            fq_td_1_curr_sz
+                            fq_td_1_curr_sz,
+                            fq_td_2_d,
+                            fq_td_2_curr_sz
                     );
                 }
             }
@@ -391,6 +353,7 @@ int bfs( // breadth-first search on GPU
 
     cudaSetDevice(gpu_id);
 
+    cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
 //    if(WARPS_NUM_BU > MAX_THDS_RD){ // MAX_THDS_RD will be scaled to 1024 * 1024 * 1024, in the future.
 //
 //        std::cout << "The number of warps for reduction in bottom-up exceeds the maximum value." << std::endl;

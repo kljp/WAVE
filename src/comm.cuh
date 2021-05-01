@@ -18,14 +18,13 @@ const index_t  BLKS_NUM_BU = 8192; // grid dimension
 
 const float par_alpha = 0.00015;
 const float par_beta = 0.1;
-const float par_gamma = 0.4;
 
 #define WSZ 32 // warp size
 #define MAX_THDS_PER_BLKS 1024
 #define MAX_THDS_RD (1024 * 1024)
 __device__ const unsigned int WARPS_NUM_BU = THDS_NUM_BU * BLKS_NUM_BU / WSZ;
 
-#define NUM_ITER 1024
+#define NUM_ITER 64
 #define INFTY (unsigned int) (0xFFFFFFFF)
 
 static void HandleError( cudaError_t err,

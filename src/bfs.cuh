@@ -79,7 +79,6 @@ void bfs_bu(
         const index_t vert_count,
         depth_t &level,
         vertex_t *fq_sz_h,
-        vertex_t *success_bu_d,
         vertex_t *fq_bu_curr_sz
 ){
 
@@ -92,7 +91,6 @@ void bfs_bu(
             adj_deg_d,
             vert_count,
             level,
-            success_bu_d,
             fq_bu_curr_sz
     );
     cudaDeviceSynchronize();
@@ -141,8 +139,7 @@ void bfs_tdbu(
         vertex_t *fq_sz_h,
         vertex_t *fq_td_2_d,
         vertex_t *fq_td_2_curr_sz,
-        vertex_t *fq_bu_curr_sz,
-        vertex_t *success_bu_d
+        vertex_t *fq_bu_curr_sz
 ){
 
     index_t fq_swap = 1;
@@ -308,7 +305,6 @@ void bfs_tdbu(
                     vert_count,
                     level,
                     fq_sz_h,
-                    success_bu_d,
                     fq_bu_curr_sz
             );
         }
@@ -336,11 +332,6 @@ int bfs( // breadth-first search on GPU
 
     cudaSetDevice(gpu_id);
     cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
-//    if(WARPS_NUM_BU > MAX_THDS_RD){ // MAX_THDS_RD will be scaled to 1024 * 1024 * 1024, in the future.
-//
-//        std::cout << "The number of warps for reduction in bottom-up exceeds the maximum value." << std::endl;
-//        return 0;
-//    }
 
     depth_t *sa_d; // status array on GPU
     depth_t *sa_h; // status array on CPU
@@ -358,7 +349,6 @@ int bfs( // breadth-first search on GPU
     vertex_t *temp_fq_curr_sz;
     vertex_t *fq_sz_h;
     vertex_t *fq_bu_curr_sz; // used for the number of vertices examined at each level, the size must be 1
-    vertex_t *success_bu_d;
 
     alloc<vertex_t, index_t, depth_t>::
     alloc_mem(
@@ -381,8 +371,7 @@ int bfs( // breadth-first search on GPU
             fq_sz_h,
             fq_td_2_d,
             fq_td_2_curr_sz,
-            fq_bu_curr_sz,
-            success_bu_d
+            fq_bu_curr_sz
     );
 
     mcpy_init_temp<vertex_t, index_t, depth_t>
@@ -461,8 +450,7 @@ int bfs( // breadth-first search on GPU
                 fq_sz_h,
                 fq_td_2_d,
                 fq_td_2_curr_sz,
-                fq_bu_curr_sz,
-                success_bu_d
+                fq_bu_curr_sz
         );
 
         t_end = wtime();
@@ -515,8 +503,7 @@ int bfs( // breadth-first search on GPU
             fq_sz_h,
             fq_td_2_d,
             fq_td_2_curr_sz,
-            fq_bu_curr_sz,
-            success_bu_d
+            fq_bu_curr_sz
     );
 
     std::cout << "GPU BFS finished" << std::endl;

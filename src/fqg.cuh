@@ -160,7 +160,6 @@ __global__ void fqg_bu_wcsa( // warp-cooperative status array check
         const index_t * __restrict__ adj_deg_d,
         const index_t vert_count,
         const depth_t level,
-        vertex_t *success_bu_d,
         vertex_t *fq_bu_curr_sz
 ){
 
@@ -177,8 +176,10 @@ __global__ void fqg_bu_wcsa( // warp-cooperative status array check
     vertex_t nbid; // neighbor vertex id
     index_t pred;
 
-//    if(lid_st == 0 && wid_st < vert_count)
-//        success_bu_d[wid_st] = 0;
+    __shared__ index_t sum[8];
+    index_t wid_blk = wid % 8;
+    if(lid_st == 0 && wid_st < vert_count)
+        sum[wid_blk] = 0;
 
     while(wid < vert_count){
 
@@ -193,16 +194,16 @@ __global__ void fqg_bu_wcsa( // warp-cooperative status array check
                 pred = 0;
                 nbid = adj_list_d[beg_pos + lid];
 
-                if(sa_d[nbid] == level){
-
+                if(sa_d[nbid] == level)
                     pred = 1;
-                    sa_d[wid] = level + 1;
-                }
 
                 if(__ballot_sync(0xFFFFFFFF, pred) != 0){
 
-                    if(lid_st == 0)
-                        atomicAdd(fq_bu_curr_sz, 1); //success_bu_d[wid_st]++;
+                    if(lid_st == 0){
+
+                        sa_d[wid] = level + 1;
+                        sum[wid_blk]++;//atomicAdd(fq_bu_curr_sz, 1);
+                    }
 
                     break;
                 }
@@ -215,8 +216,18 @@ __global__ void fqg_bu_wcsa( // warp-cooperative status array check
     }
 
     if(lid_st == 0 && wid_st < vert_count)
-        atomicAdd(fq_bu_curr_sz, success_bu_d[wid_st]);
+        atomicAdd(fq_bu_curr_sz, sum[wid_blk]);
 }
+
+//__inline__ __device__ int warpReduce(int mySum){
+//
+//    mySum += __shfl_xor(mySum, 16);
+//    mySum += __shfl_xor(mySum, 8);
+//    mySum += __shfl_xor(mySum, 4);
+//    mySum += __shfl_xor(mySum, 2);
+//    mySum += __shfl_xor(mySum, 1);
+//    return mySum;
+//}
 
 template<typename vertex_t, typename index_t, typename depth_t>
 __global__ void fqg_rev_tcfe( // thread-centric frontier enqueue

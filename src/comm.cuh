@@ -19,13 +19,13 @@ const index_t BLKS_NUM_TD_WCSAC = 32768;
 const index_t THDS_NUM_TD_WCSAC =  256;
 const index_t BLKS_NUM_TD_TCFE = 16384;
 const index_t THDS_NUM_TD_TCFE =  256;
-const index_t BLKS_NUM_BU_WCSA = 32768;
+const index_t BLKS_NUM_BU_WCSA = 40960;
 const index_t THDS_NUM_BU_WCSA =  256;
 const index_t BLKS_NUM_REV_TCFE = 16384;
 const index_t THDS_NUM_REV_TCFE =  256;
 
 const float par_alpha = 0.00023;
-const float par_beta = 0.137;
+const float par_beta = 0.13;
 
 #define WSZ 32 // warp size
 #define MAX_THDS_PER_BLKS 1024

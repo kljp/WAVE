@@ -29,8 +29,8 @@ template<typename vertex_t, typename index_t, typename depth_t>
 __global__ void mcpy_init_fq_td(
 
         index_t vert_count,
-        vertex_t *temp_fq_td_d,
-        vertex_t *temp_fq_curr_sz,
+        const vertex_t * __restrict__ temp_fq_td_d,
+        const vertex_t * __restrict__ temp_fq_curr_sz,
         vertex_t *fq_td_d,
         vertex_t *fq_td_curr_sz
 ){

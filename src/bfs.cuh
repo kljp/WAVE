@@ -25,7 +25,7 @@ void bfs_td(
     if(*fq_sz_h < (vertex_t) (par_alpha * vert_count)){
 
         fqg_td_wccao<vertex_t, index_t, depth_t> // warp-cooperative chained atomic operations
-        <<<1, 1024>>>(
+        <<<BLKS_NUM_TD_WCCAO, THDS_NUM_TD_WCCAO>>>(
 
                 sa_d,
                 adj_list_d,
@@ -43,7 +43,7 @@ void bfs_td(
     else{
 
         fqg_td_wcsac<vertex_t, index_t, depth_t> // warp-cooperative status array check
-        <<<8192, 1024>>>(
+        <<<BLKS_NUM_TD_WCSAC, THDS_NUM_TD_WCSAC>>>(
 
                 sa_d,
                 adj_list_d,
@@ -56,7 +56,7 @@ void bfs_td(
         cudaDeviceSynchronize();
 
         fqg_td_tcfe<vertex_t, index_t, depth_t> // thread-centric frontier enqueue
-        <<<BLKS_NUM_FQG, THDS_NUM_FQG>>>(
+        <<<BLKS_NUM_TD_TCFE, THDS_NUM_TD_TCFE>>>(
 
                 sa_d,
                 vert_count,
@@ -85,8 +85,10 @@ void bfs_bu(
         vertex_t *fq_bu_curr_sz
 ){
 
+//    aaa<<<1, 1>>>(fq_bu_curr_sz);
+
     fqg_bu_wcsa<vertex_t, index_t, depth_t>
-    <<<BLKS_NUM_BU, THDS_NUM_BU>>>(
+    <<<BLKS_NUM_BU_WCSA, THDS_NUM_BU_WCSA>>>(
 
             sa_d,
             adj_list_d,
@@ -94,7 +96,8 @@ void bfs_bu(
             adj_deg_d,
             vert_count,
             level,
-            success_bu_d
+            success_bu_d,
+            fq_bu_curr_sz
     );
     cudaDeviceSynchronize();
 
@@ -140,7 +143,7 @@ void bfs_rev(
 ){
 
     fqg_rev_tcfe<vertex_t, index_t, depth_t> // thread-centric frontier enqueue
-    <<<BLKS_NUM_FQG, THDS_NUM_FQG>>>(
+    <<<BLKS_NUM_REV_TCFE, THDS_NUM_REV_TCFE>>>(
 
             sa_d,
             vert_count,
@@ -210,7 +213,7 @@ void bfs_tdbu(
                     if(fq_swap == 0){
 
                         mcpy_init_fq_td<vertex_t, index_t, depth_t>
-                        <<<BLKS_NUM, THDS_NUM>>>(
+                        <<<BLKS_NUM_INIT_RT, THDS_NUM_INIT_RT>>>(
 
                                 vert_count,
                                 temp_fq_td_d,
@@ -235,7 +238,7 @@ void bfs_tdbu(
                         else{
 
                             mcpy_init_fq_td<vertex_t, index_t, depth_t>
-                            <<<BLKS_NUM, THDS_NUM>>>(
+                            <<<BLKS_NUM_INIT_RT, THDS_NUM_INIT_RT>>>(
 
                                     vert_count,
                                     temp_fq_td_d,
@@ -352,7 +355,6 @@ int bfs( // breadth-first search on GPU
 ){
 
     cudaSetDevice(gpu_id);
-
     cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
 //    if(WARPS_NUM_BU > MAX_THDS_RD){ // MAX_THDS_RD will be scaled to 1024 * 1024 * 1024, in the future.
 //
@@ -406,7 +408,7 @@ int bfs( // breadth-first search on GPU
     );
 
     mcpy_init_temp<vertex_t, index_t, depth_t>
-    <<<BLKS_NUM, THDS_NUM>>>(
+    <<<BLKS_NUM_INIT, THDS_NUM_INIT>>>(
 
             vert_count,
             temp_fq_td_d,
@@ -419,7 +421,7 @@ int bfs( // breadth-first search on GPU
     double avg_gteps = 0.0; // average_teps (traversed edges per second)
     double curr_gteps; // current_teps
 
-    warm_up_gpu<<<BLKS_NUM, THDS_NUM>>>();
+    warm_up_gpu<<<BLKS_NUM_INIT, THDS_NUM_INIT>>>();
     cudaDeviceSynchronize();
 
     ///// iteration starts - currently only one iteration //////////////////////////////////////////////////////////////
@@ -429,7 +431,7 @@ int bfs( // breadth-first search on GPU
         H_ERR(cudaMemcpy(sa_h, temp_sa, sizeof(depth_t) * vert_count, cudaMemcpyHostToHost));
 
         mcpy_init_fq_td<vertex_t, index_t, depth_t>
-        <<<BLKS_NUM, THDS_NUM>>>(
+        <<<BLKS_NUM_INIT, THDS_NUM_INIT>>>(
 
                 vert_count,
                 temp_fq_td_d,
@@ -440,7 +442,7 @@ int bfs( // breadth-first search on GPU
         cudaDeviceSynchronize();
 
         mcpy_init_fq_td<vertex_t, index_t, depth_t>
-        <<<BLKS_NUM, THDS_NUM>>>(
+        <<<BLKS_NUM_INIT, THDS_NUM_INIT>>>(
 
                 vert_count,
                 temp_fq_td_d,

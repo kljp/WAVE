@@ -214,8 +214,8 @@ __global__ void fqg_bu_wcsa( // warp-cooperative status array check
         wid += grnt;
     }
 
-//    if(lid_st == 0 && wid_st < vert_count)
-//        atomicAdd(fq_bu_curr_sz, success_bu_d[wid_st]);
+    if(lid_st == 0 && wid_st < vert_count)
+        atomicAdd(fq_bu_curr_sz, success_bu_d[wid_st]);
 }
 
 template<typename vertex_t, typename index_t, typename depth_t>
@@ -241,8 +241,4 @@ __global__ void fqg_rev_tcfe( // thread-centric frontier enqueue
 
         tid += grnt;
     }
-}
-
-__global__ void aaa(int* x){
-    *x = 0;
 }

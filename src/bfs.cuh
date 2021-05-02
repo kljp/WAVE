@@ -4,15 +4,14 @@
 #include "comm.cuh"
 #include "fqg.cuh"
 #include "mcpy.cuh"
-#include "rdce.cuh"
 
 template<typename vertex_t, typename index_t, typename depth_t>
 void bfs_td(
 
         depth_t *sa_d,
-        const vertex_t *adj_list_d,
-        const index_t *offset_d,
-        const index_t *adj_deg_d,
+        const vertex_t * __restrict__ adj_list_d,
+        const index_t * __restrict__ offset_d,
+        const index_t * __restrict__ adj_deg_d,
         const index_t vert_count,
         depth_t &level,
         vertex_t *fq_td_in_d,
@@ -74,18 +73,15 @@ template<typename vertex_t, typename index_t, typename depth_t>
 void bfs_bu(
 
         depth_t *sa_d,
-        const vertex_t *adj_list_d,
-        const index_t *offset_d,
-        const index_t *adj_deg_d,
+        const vertex_t * __restrict__ adj_list_d,
+        const index_t * __restrict__ offset_d,
+        const index_t * __restrict__ adj_deg_d,
         const index_t vert_count,
         depth_t &level,
         vertex_t *fq_sz_h,
         vertex_t *success_bu_d,
-        vertex_t *rdce_success_bu_d,
         vertex_t *fq_bu_curr_sz
 ){
-
-//    aaa<<<1, 1>>>(fq_bu_curr_sz);
 
     fqg_bu_wcsa<vertex_t, index_t, depth_t>
     <<<BLKS_NUM_BU_WCSA, THDS_NUM_BU_WCSA>>>(
@@ -99,29 +95,6 @@ void bfs_bu(
             success_bu_d,
             fq_bu_curr_sz
     );
-    cudaDeviceSynchronize();
-
-    unsigned int blks;
-    unsigned int rdce_sz_st = WARPS_NUM_BU;
-
-    if(rdce_sz_st > MAX_THDS_PER_BLKS){
-
-        unsigned int rdce_sz = rdce_sz_st;
-        blks = rdce_sz / MAX_THDS_PER_BLKS;
-
-        if(blks >= 8)
-            rdce_ur_wp_8<<<blks / 8, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
-        else if(blks >= 4)
-            rdce_ur_4<<<blks / 4, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
-        else
-            rdce_ur_2<<<blks / 2, MAX_THDS_PER_BLKS>>>(success_bu_d, rdce_success_bu_d, rdce_sz);
-
-        rdce_sz /= MAX_THDS_PER_BLKS;
-        rdce_il<<<1, rdce_sz>>>(rdce_success_bu_d, fq_bu_curr_sz, rdce_sz);
-    }
-    else
-        rdce_il<<<1, rdce_sz_st>>>(success_bu_d, fq_bu_curr_sz, rdce_sz_st);
-
     cudaDeviceSynchronize();
 
     H_ERR(cudaMemcpy(fq_sz_h, fq_bu_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
@@ -156,9 +129,9 @@ template<typename vertex_t, typename index_t, typename depth_t>
 void bfs_tdbu(
 
         depth_t *sa_d,
-        const vertex_t *adj_list_d,
-        const index_t *offset_d,
-        const index_t *adj_deg_d,
+        const vertex_t * __restrict__ adj_list_d,
+        const index_t * __restrict__ offset_d,
+        const index_t * __restrict__ adj_deg_d,
         const index_t vert_count,
         depth_t &level,
         vertex_t *fq_td_1_d,
@@ -169,8 +142,7 @@ void bfs_tdbu(
         vertex_t *fq_td_2_d,
         vertex_t *fq_td_2_curr_sz,
         vertex_t *fq_bu_curr_sz,
-        vertex_t *success_bu_d,
-        vertex_t *rdce_success_bu_d
+        vertex_t *success_bu_d
 ){
 
     index_t fq_swap = 1;
@@ -337,7 +309,6 @@ void bfs_tdbu(
                     level,
                     fq_sz_h,
                     success_bu_d,
-                    rdce_success_bu_d,
                     fq_bu_curr_sz
             );
         }
@@ -388,7 +359,6 @@ int bfs( // breadth-first search on GPU
     vertex_t *fq_sz_h;
     vertex_t *fq_bu_curr_sz; // used for the number of vertices examined at each level, the size must be 1
     vertex_t *success_bu_d;
-    vertex_t *rdce_success_bu_d;
 
     alloc<vertex_t, index_t, depth_t>::
     alloc_mem(
@@ -412,8 +382,7 @@ int bfs( // breadth-first search on GPU
             fq_td_2_d,
             fq_td_2_curr_sz,
             fq_bu_curr_sz,
-            success_bu_d,
-            rdce_success_bu_d
+            success_bu_d
     );
 
     mcpy_init_temp<vertex_t, index_t, depth_t>
@@ -433,7 +402,7 @@ int bfs( // breadth-first search on GPU
     warm_up_gpu<<<BLKS_NUM_INIT, THDS_NUM_INIT>>>();
     cudaDeviceSynchronize();
 
-    ///// iteration starts - currently only one iteration //////////////////////////////////////////////////////////////
+    ///// iteration starts /////////////////////////////////////////////////////////////////////////////////////////////
 
     for(index_t i = 0; i < NUM_ITER; i++){
         H_ERR(cudaMemcpy(sa_d, temp_sa, sizeof(depth_t) * vert_count, cudaMemcpyHostToDevice));
@@ -493,8 +462,7 @@ int bfs( // breadth-first search on GPU
                 fq_td_2_d,
                 fq_td_2_curr_sz,
                 fq_bu_curr_sz,
-                success_bu_d,
-                rdce_success_bu_d
+                success_bu_d
         );
 
         t_end = wtime();
@@ -548,8 +516,7 @@ int bfs( // breadth-first search on GPU
             fq_td_2_d,
             fq_td_2_curr_sz,
             fq_bu_curr_sz,
-            success_bu_d,
-            rdce_success_bu_d
+            success_bu_d
     );
 
     std::cout << "GPU BFS finished" << std::endl;

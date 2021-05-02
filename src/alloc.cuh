@@ -24,8 +24,7 @@ struct alloc{
         vertex_t* &fq_td_2_d,
         vertex_t* &fq_td_2_curr_sz,
         vertex_t* &fq_bu_curr_sz,
-        vertex_t* &success_bu_d,
-        vertex_t* &rdce_success_bu_d
+        vertex_t* &success_bu_d
     ){
 
         long cpu_bytes = 0;
@@ -79,8 +78,6 @@ struct alloc{
         gpu_bytes += sizeof(vertex_t);
         H_ERR(cudaMalloc((void **) &success_bu_d, sizeof(vertex_t) * WARPS_NUM_BU));
         gpu_bytes += sizeof(vertex_t) * WARPS_NUM_BU;
-        H_ERR(cudaMalloc((void **) &rdce_success_bu_d, sizeof(vertex_t) * WARPS_NUM_BU / MAX_THDS_PER_BLKS));
-        gpu_bytes += sizeof(vertex_t) * WARPS_NUM_BU / MAX_THDS_PER_BLKS;
 
         std::cout << "CPU alloc space: " << cpu_bytes << " bytes" << std::endl;
         std::cout << "GPU alloc space: " << gpu_bytes << " bytes" << std::endl;
@@ -103,8 +100,7 @@ struct alloc{
         vertex_t* &fq_td_2_d,
         vertex_t* &fq_td_2_curr_sz,
         vertex_t* &fq_bu_curr_sz,
-        vertex_t* &success_bu_d,
-        vertex_t* &rdce_success_bu_d
+        vertex_t* &success_bu_d
     ){
 
         cudaFree(sa_d);
@@ -123,6 +119,5 @@ struct alloc{
         cudaFree(fq_td_2_curr_sz);
         cudaFree(fq_bu_curr_sz);
         cudaFree(success_bu_d);
-        cudaFree(rdce_success_bu_d);
     }
 };

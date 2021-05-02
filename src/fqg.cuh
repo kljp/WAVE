@@ -177,8 +177,8 @@ __global__ void fqg_bu_wcsa( // warp-cooperative status array check
     vertex_t nbid; // neighbor vertex id
     index_t pred;
 
-    if(lid_st == 0 && wid_st < vert_count)
-        success_bu_d[wid_st] = 0;
+//    if(lid_st == 0 && wid_st < vert_count)
+//        success_bu_d[wid_st] = 0;
 
     while(wid < vert_count){
 
@@ -202,7 +202,7 @@ __global__ void fqg_bu_wcsa( // warp-cooperative status array check
                 if(__ballot_sync(0xFFFFFFFF, pred) != 0){
 
                     if(lid_st == 0)
-                        success_bu_d[wid_st]++;
+                        atomicAdd(fq_bu_curr_sz, 1); //success_bu_d[wid_st]++;
 
                     break;
                 }

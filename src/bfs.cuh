@@ -134,12 +134,8 @@ void bfs_rev(
         const index_t vert_count,
         depth_t &level,
         vertex_t *fq_sz_h,
-        vertex_t *temp_fq_td_d,
-        vertex_t *temp_fq_curr_sz,
         vertex_t *fq_td_1_d,
-        vertex_t *fq_td_1_curr_sz,
-        vertex_t *fq_td_2_d,
-        vertex_t *fq_td_2_curr_sz
+        vertex_t *fq_td_1_curr_sz
 ){
 
     fqg_rev_tcfe<vertex_t, index_t, depth_t> // thread-centric frontier enqueue
@@ -148,12 +144,8 @@ void bfs_rev(
             sa_d,
             vert_count,
             level,
-            temp_fq_td_d,
-            temp_fq_curr_sz,
             fq_td_1_d,
-            fq_td_1_curr_sz,
-            fq_td_2_d,
-            fq_td_2_curr_sz
+            fq_td_1_curr_sz
     );
     cudaDeviceSynchronize();
 
@@ -255,18 +247,35 @@ void bfs_tdbu(
                     reversed = 0;
                     fq_swap = 0;
 
+                    mcpy_init_fq_td<vertex_t, index_t, depth_t>
+                    <<<BLKS_NUM_INIT_RT, THDS_NUM_INIT_RT>>>(
+
+                            vert_count,
+                            temp_fq_td_d,
+                            temp_fq_curr_sz,
+                            fq_td_2_d,
+                            fq_td_2_curr_sz
+                    );
+
+                    mcpy_init_fq_td<vertex_t, index_t, depth_t>
+                    <<<BLKS_NUM_INIT_RT, THDS_NUM_INIT_RT>>>(
+
+                            vert_count,
+                            temp_fq_td_d,
+                            temp_fq_curr_sz,
+                            fq_td_1_d,
+                            fq_td_1_curr_sz
+                    );
+                    cudaDeviceSynchronize();
+
                     bfs_rev<vertex_t, index_t, depth_t>(
 
                             sa_d,
                             vert_count,
                             level,
                             fq_sz_h,
-                            temp_fq_td_d,
-                            temp_fq_curr_sz,
                             fq_td_1_d,
-                            fq_td_1_curr_sz,
-                            fq_td_2_d,
-                            fq_td_2_curr_sz
+                            fq_td_1_curr_sz
                     );
                 }
             }

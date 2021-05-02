@@ -224,12 +224,8 @@ __global__ void fqg_rev_tcfe( // thread-centric frontier enqueue
         const depth_t * __restrict__ sa_d,
         const index_t vert_count,
         const depth_t level,
-        vertex_t * __restrict__ temp_fq_td_d,
-        vertex_t * __restrict__ temp_fq_curr_sz,
         vertex_t *fq_td_1_d,
-        vertex_t *fq_td_1_curr_sz,
-        vertex_t *fq_td_2_d,
-        vertex_t *fq_td_2_curr_sz
+        vertex_t *fq_td_1_curr_sz
 ){
 
     index_t tid_st = threadIdx.x + blockDim.x * blockIdx.x;
@@ -240,19 +236,10 @@ __global__ void fqg_rev_tcfe( // thread-centric frontier enqueue
 
     while(tid < vert_count){
 
-        fq_td_1_d[tid] = temp_fq_td_d[tid];
-        fq_td_2_d[tid] = temp_fq_td_d[tid];
-
         if(sa_d[tid] == level)
             fq_td_1_d[atomicAdd(fq_td_1_curr_sz, 1)] = tid;
 
         tid += grnt;
-    }
-
-    if(tid_st == 0){
-
-        *fq_td_1_curr_sz = *temp_fq_curr_sz;
-        *fq_td_2_curr_sz = *temp_fq_curr_sz;
     }
 }
 

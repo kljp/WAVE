@@ -1,4 +1,4 @@
-exe = text_to_bin.bin
+exe = csrg
 
 cc = "$(shell which g++)" 
 flags = -O3

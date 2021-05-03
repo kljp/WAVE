@@ -21,7 +21,7 @@ void bfs_td(
         vertex_t *fq_td_out_curr_sz
 ){
 
-    if(*fq_sz_h < (vertex_t) (par_alpha * vert_count)){
+    if(*fq_sz_h < (vertex_t) (PAR_ALPHA * vert_count)){
 
         fqg_td_wccao<vertex_t, index_t, depth_t> // warp-cooperative chained atomic operations
         <<<BLKS_NUM_TD_WCCAO, THDS_NUM_TD_WCCAO>>>(
@@ -150,7 +150,7 @@ void bfs_tdbu(
 
     for(level = 0; ; level++){
 
-        if(*fq_sz_h < (vertex_t) (par_beta * vert_count)){
+        if(*fq_sz_h < (vertex_t) (PAR_BETA * vert_count)){
 
             if(TD_BU)
                 reversed = 1;

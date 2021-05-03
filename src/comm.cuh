@@ -9,28 +9,25 @@ typedef unsigned int depth_t;
 
 index_t TD_BU; // 0: top-down, 1: bottom-up
 
-const index_t BLKS_NUM_INIT = 4096;
-const index_t THDS_NUM_INIT =  256;
-const index_t BLKS_NUM_INIT_RT = 4096;
-const index_t THDS_NUM_INIT_RT =  256;
-const index_t BLKS_NUM_TD_WCCAO = 128;
-const index_t THDS_NUM_TD_WCCAO =  256;
-const index_t BLKS_NUM_TD_WCSAC = 32768;
-const index_t THDS_NUM_TD_WCSAC =  256;
-const index_t BLKS_NUM_TD_TCFE = 16384;
-const index_t THDS_NUM_TD_TCFE =  256;
-const index_t BLKS_NUM_BU_WCSA = 40960;
-const index_t THDS_NUM_BU_WCSA =  256;
-const index_t BLKS_NUM_REV_TCFE = 16384;
-const index_t THDS_NUM_REV_TCFE =  256;
+#define BLKS_NUM_INIT 4096
+#define THDS_NUM_INIT 256
+#define BLKS_NUM_INIT_RT 4096
+#define THDS_NUM_INIT_RT 256
+#define BLKS_NUM_TD_WCCAO 128
+#define THDS_NUM_TD_WCCAO 256
+#define BLKS_NUM_TD_WCSAC 32768
+#define THDS_NUM_TD_WCSAC 256
+#define BLKS_NUM_TD_TCFE 16384
+#define THDS_NUM_TD_TCFE 256
+#define BLKS_NUM_BU_WCSA 40960
+#define THDS_NUM_BU_WCSA 256
+#define BLKS_NUM_REV_TCFE 16384
+#define THDS_NUM_REV_TCFE 256
 
-const float par_alpha = 0.00023;
-const float par_beta = 0.13;
+#define PAR_ALPHA 0.00023
+#define PAR_BETA 0.13
 
 #define WSZ 32 // warp size
-#define MAX_THDS_PER_BLKS 1024
-#define MAX_THDS_RD (1024 * 1024)
-__device__ const unsigned int WARPS_NUM_BU = THDS_NUM_BU_WCSA * BLKS_NUM_BU_WCSA / WSZ;
 
 #define NUM_ITER 64
 #define INFTY (unsigned int) (0xFFFFFFFF)

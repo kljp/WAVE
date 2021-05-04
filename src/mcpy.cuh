@@ -58,16 +58,4 @@ __global__ void flush_fq(
     *fq_curr_sz = 0;
 }
 
-template<typename vertex_t, typename index_t, typename depth_t>
-__global__ void calc_rmnd( // calculate remaining vertices
-
-        vertex_t *fq_bu_curr_sz,
-        const vertex_t * __restrict__ proc_bu
-){
-    printf("%d ", *fq_bu_curr_sz);
-    printf("%d ", *proc_bu);
-    printf("%d\n", *fq_bu_curr_sz = - *proc_bu);
-    *fq_bu_curr_sz = *fq_bu_curr_sz - *proc_bu;
-}
-
 #endif // __H_MCPY__

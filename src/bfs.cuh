@@ -428,7 +428,6 @@ void bfs_tdbu(
                 cudaDeviceSynchronize();
 
                 H_ERR(cudaMemcpy(fq_sz_h, fq_bu_2_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
-
             }
 
 //            flush_fq<vertex_t, index_t, depth_t>

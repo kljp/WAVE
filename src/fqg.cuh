@@ -246,8 +246,8 @@ __global__ void fqg_bu_test( // warp-cooperative status array check
 
         if(sa_d[vid] == INFTY){
 
-            deg_curr = adj_deg_d[wid];
-            beg_pos = offset_d[wid];
+            deg_curr = adj_deg_d[vid];
+            beg_pos = offset_d[vid];
             lid = lid_st;
 
             while(lid < deg_curr){
@@ -257,7 +257,7 @@ __global__ void fqg_bu_test( // warp-cooperative status array check
 
                 if(sa_d[nbid] == level) {
 
-                    sa_d[wid] = level + 1;
+                    sa_d[vid] = level + 1;
                     pred = 1;
                 }
 

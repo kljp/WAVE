@@ -4,6 +4,13 @@
 This project aims to support a high performance breadth-first graph traversal on GPUs.
 
 ---
+Tested Operating system
+-----
+Ubuntu 16.04.5 LTS, Ubuntu 20.04.1 LTS
+
+---
+
+---
 Tested software
 -----
 g++ 5.4.0, CUDA 11.2, CUDA 11.3
@@ -11,7 +18,7 @@ g++ 5.4.0, CUDA 11.2, CUDA 11.3
 ---
 Tested hardware
 -----
-GTX970, RTX3080 (more products will be tested)
+GTX970, RTX3080
 
 ---
 Compile

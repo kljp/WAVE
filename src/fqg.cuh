@@ -212,13 +212,79 @@ __global__ void fqg_bu_wcsa( // warp-cooperative status array check
 }
 
 template<typename vertex_t, typename index_t, typename depth_t>
-__global__ void fqg_rev_tcfe( // thread-centric frontier enqueue
+__global__ void fqg_bu_test( // warp-cooperative status array check
+
+        depth_t *sa_d,
+        const vertex_t * __restrict__ adj_list_d,
+        const index_t * __restrict__ offset_d,
+        const index_t * __restrict__ adj_deg_d,
+        const depth_t level,
+        vertex_t *fq_bu_in_d,
+        vertex_t *fq_bu_in_curr_sz,
+        vertex_t *fq_bu_out_d,
+        vertex_t *fq_bu_out_curr_sz
+){
+
+    index_t tid = threadIdx.x + blockIdx.x * blockDim.x;
+    index_t lid_st = tid % WSZ; // laneID
+    index_t lid;
+    index_t wid_st = tid / WSZ; // warpID
+    index_t wid = wid_st;
+    const index_t grnt = blockDim.x * gridDim.x / WSZ; // granularity
+    const index_t fq_sz = (index_t) *fq_bu_in_curr_sz;
+
+    vertex_t vid;
+    index_t deg_curr;
+    index_t beg_pos;
+
+    vertex_t nbid; // neighbor vertex id
+    index_t pred;
+
+    while(wid < fq_sz){
+
+        vid = fq_bu_in_d[wid];
+
+        if(sa_d[vid] == INFTY){
+
+            deg_curr = adj_deg_d[wid];
+            beg_pos = offset_d[wid];
+            lid = lid_st;
+
+            while(lid < deg_curr){
+
+                pred = 0;
+                nbid = adj_list_d[beg_pos + lid];
+
+                if(sa_d[nbid] == level) {
+
+                    sa_d[wid] = level + 1;
+                    pred = 1;
+                }
+
+                if(__ballot_sync(0xFFFFFFFF, pred) != 0){
+
+                    if(lid_st == 0)
+                        fq_bu_out_d[atomicAdd(fq_bu_out_curr_sz, 1)] = vid;
+
+                    break;
+                }
+
+                lid += WSZ;
+            }
+        }
+
+        wid += grnt;
+    }
+}
+
+template<typename vertex_t, typename index_t, typename depth_t>
+__global__ void fqg_rev_BT_tcfe( // thread-centric frontier enqueue
 
         const depth_t * __restrict__ sa_d,
         const index_t vert_count,
         const depth_t level,
-        vertex_t *fq_td_1_d,
-        vertex_t *fq_td_1_curr_sz
+        vertex_t *fq_td_in_d,
+        vertex_t *fq_td_in_curr_sz
 ){
 
     index_t tid_st = threadIdx.x + blockDim.x * blockIdx.x;
@@ -230,7 +296,32 @@ __global__ void fqg_rev_tcfe( // thread-centric frontier enqueue
     while(tid < vert_count){
 
         if(sa_d[tid] == level)
-            fq_td_1_d[atomicAdd(fq_td_1_curr_sz, 1)] = tid;
+            fq_td_in_d[atomicAdd(fq_td_in_curr_sz, 1)] = tid;
+
+        tid += grnt;
+    }
+}
+
+template<typename vertex_t, typename index_t, typename depth_t>
+__global__ void fqg_rev_TB_tcfe( // thread-centric frontier enqueue
+
+        const depth_t * __restrict__ sa_d,
+        const index_t vert_count,
+        const depth_t level,
+        vertex_t *fq_bu_in_d,
+        vertex_t *fq_bu_in_curr_sz
+){
+
+    index_t tid_st = threadIdx.x + blockDim.x * blockIdx.x;
+    index_t tid;
+    const index_t grnt = blockDim.x * gridDim.x; // granularity
+
+    tid = tid_st;
+
+    while(tid < vert_count){
+
+        if(sa_d[tid] == INFTY)
+            fq_bu_in_d[atomicAdd(fq_bu_in_curr_sz, 1)] = tid;
 
         tid += grnt;
     }

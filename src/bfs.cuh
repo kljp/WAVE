@@ -143,6 +143,7 @@ void bfs_tdbu(
 ){
 
     index_t fq_swap = 1;
+    index_t switching = -1;
     index_t reversed = 0;
     TD_BU = 0;
 
@@ -157,8 +158,23 @@ void bfs_tdbu(
 
             TD_BU = 0;
         }
-        else
-            TD_BU = 1;
+        else{
+
+            if(!TD_BU){
+
+                if(switching == -1)
+                    switching = level + 1;
+            }
+
+            else
+                TD_BU = 1;
+        }
+
+            if(level == switching){
+
+                std::cout << "TD -> BU" << std::endl;
+                TD_BU = 1;
+            }
 
         if(!TD_BU){
 
@@ -290,6 +306,8 @@ void bfs_tdbu(
             cudaDeviceSynchronize();
         }
         else{
+            std::cout << "BU" << std::endl;
+            switching = -1;
 
             flush_fq<vertex_t, index_t, depth_t>
             <<<1, 1>>>(
@@ -309,6 +327,7 @@ void bfs_tdbu(
                     fq_sz_h,
                     fq_bu_curr_sz
             );
+            cudaDeviceSynchronize();
         }
 
         if(!TD_BU){

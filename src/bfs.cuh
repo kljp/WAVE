@@ -143,7 +143,6 @@ void bfs_tdbu(
 ){
 
     index_t fq_swap = 1;
-    index_t switching = -1;
     index_t reversed = 0;
     TD_BU = 0;
 
@@ -158,23 +157,10 @@ void bfs_tdbu(
 
             TD_BU = 0;
         }
-        else{
 
-            if(!TD_BU){
+        else
+            TD_BU = 1;
 
-                if(switching == -1)
-                    switching = level + 1;
-            }
-
-            else
-                TD_BU = 1;
-        }
-
-            if(level == switching){
-
-                std::cout << "TD -> BU" << std::endl;
-                TD_BU = 1;
-            }
 
         if(!TD_BU){
 
@@ -306,8 +292,6 @@ void bfs_tdbu(
             cudaDeviceSynchronize();
         }
         else{
-            std::cout << "BU" << std::endl;
-            switching = -1;
 
             flush_fq<vertex_t, index_t, depth_t>
             <<<1, 1>>>(
@@ -404,9 +388,11 @@ int bfs( // breadth-first search on GPU
     cudaDeviceSynchronize();
 
     depth_t level;
+    double avg_depth = 0;
     double t_st, t_end, t_elpd; // time_start, time_end, time_elapsed
     double avg_gteps = 0.0; // average_teps (traversed edges per second)
     double curr_gteps; // current_teps
+    index_t abnm_ct = 0; // abnormal travesal count due to bad source
 
     warm_up_gpu<<<BLKS_NUM_INIT, THDS_NUM_INIT>>>();
     cudaDeviceSynchronize();
@@ -489,18 +475,28 @@ int bfs( // breadth-first search on GPU
             }
         }
 
+        if(tr_edge < edge_count * 0.5){
+
+            abnm_ct++;
+            std::cout << "Abnormal traversal due to bad source (the input graph is disconnected)" << std::endl;
+            continue;
+        }
+
         std::cout << "The number of traversed vertices: " << tr_vert << std::endl;
         std::cout << "The number of traversed edges: " << tr_edge << std::endl;
+        avg_depth += level;
         t_elpd = t_end - t_st;
         curr_gteps = (double) (tr_edge / t_elpd) / 1000000000;
         avg_gteps += curr_gteps;
+        std::cout << "Depth: " << level << std::endl;
         std::cout << "Consumed time (s): " << t_elpd << std::endl;
         std::cout << "Current GTEPS: " << curr_gteps << std::endl;
     }
 
-    avg_gteps /= NUM_ITER;
+    avg_depth /= (NUM_ITER - abnm_ct);
+    avg_gteps /= (NUM_ITER - abnm_ct);
     std::cout << "===========================================================" << std::endl;
-
+    std::cout << "Average depth: " << avg_depth << std::endl;
     std::cout << "Average GTEPS: " << avg_gteps << std::endl;
     std::cout << "===========================================================" << std::endl;
 

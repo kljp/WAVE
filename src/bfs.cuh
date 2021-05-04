@@ -334,6 +334,8 @@ int bfs( // breadth-first search on GPU
         index_t gpu_id
 ){
 
+    srand((unsigned int) wtime());
+
     cudaSetDevice(gpu_id);
     cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
 
@@ -392,7 +394,6 @@ int bfs( // breadth-first search on GPU
     double t_st, t_end, t_elpd; // time_start, time_end, time_elapsed
     double avg_gteps = 0.0; // average_teps (traversed edges per second)
     double curr_gteps; // current_teps
-    index_t abnm_ct = 0; // abnormal travesal count due to bad source
 
     warm_up_gpu<<<BLKS_NUM_INIT, THDS_NUM_INIT>>>();
     cudaDeviceSynchronize();
@@ -475,10 +476,11 @@ int bfs( // breadth-first search on GPU
             }
         }
 
-        if(tr_edge < edge_count * 0.5){
+        if(tr_vert < (double) vert_count * 0.5 || tr_edge < (double) edge_count * 0.7){
 
-            abnm_ct++;
-            std::cout << "Abnormal traversal due to bad source (the input graph is disconnected)" << std::endl;
+            std::cout << "Retry the traversal due to bad source (the input graph is disconnected)" << std::endl;
+            src_list[i] = rand() % vert_count;
+            i--;
             continue;
         }
 
@@ -493,8 +495,8 @@ int bfs( // breadth-first search on GPU
         std::cout << "Current GTEPS: " << curr_gteps << std::endl;
     }
 
-    avg_depth /= (NUM_ITER - abnm_ct);
-    avg_gteps /= (NUM_ITER - abnm_ct);
+    avg_depth /= NUM_ITER;
+    avg_gteps /= NUM_ITER;
     std::cout << "===========================================================" << std::endl;
     std::cout << "Average depth: " << avg_depth << std::endl;
     std::cout << "Average GTEPS: " << avg_gteps << std::endl;

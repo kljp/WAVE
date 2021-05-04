@@ -20,6 +20,8 @@ int main(int args, char **argv){
     graph<long, long, double, vertex_t, index_t, double> *ginst
     = new graph<long, long, double, vertex_t, index_t, double>(argv[1], argv[2], NULL);
 
+    srand((unsigned int) wtime());
+
     vertex_t *src_list = new int[NUM_ITER];
     vertex_t src;
     for(index_t i = 0; i < NUM_ITER; i++){

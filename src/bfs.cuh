@@ -335,6 +335,7 @@ int bfs( // breadth-first search on GPU
 ){
 
     srand((unsigned int) wtime());
+    index_t retry = 0;
 
     cudaSetDevice(gpu_id);
     cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
@@ -390,7 +391,8 @@ int bfs( // breadth-first search on GPU
     cudaDeviceSynchronize();
 
     depth_t level;
-    double avg_depth = 0;
+    double avg_depth = 0.0;
+    double avg_src_deg = 0.0;
     double t_st, t_end, t_elpd; // time_start, time_end, time_elapsed
     double avg_gteps = 0.0; // average_teps (traversed edges per second)
     double curr_gteps; // current_teps
@@ -437,9 +439,14 @@ int bfs( // breadth-first search on GPU
         cudaDeviceSynchronize();
 
         level = 0;
-        std::cout << "===========================================================" << std::endl;
-        std::cout << "<<Iteration " << i << ">>" << std::endl;
-        std::cout << "Started from " << src_list[i] << std::endl;
+
+        if(!retry){
+
+            std::cout << "===========================================================" << std::endl;
+            std::cout << "<<Iteration " << i << ">>" << std::endl;
+//        std::cout << "Started from " << src_list[i] << std::endl;
+        }
+
         t_st = wtime();
 
         bfs_tdbu<vertex_t, index_t, depth_t>(
@@ -476,17 +483,21 @@ int bfs( // breadth-first search on GPU
             }
         }
 
+        // Retry the traversal due to bad source (the input graph is disconnected)
         if(tr_vert < (double) vert_count * 0.5 || tr_edge < (double) edge_count * 0.7){
 
-            std::cout << "Retry the traversal due to bad source (the input graph is disconnected)" << std::endl;
             src_list[i] = rand() % vert_count;
             i--;
+            retry++;
             continue;
         }
+        retry = 0;
 
+        std::cout << "The degree of source: " << adj_deg_h[src_list[i]] << std::endl;
         std::cout << "The number of traversed vertices: " << tr_vert << std::endl;
         std::cout << "The number of traversed edges: " << tr_edge << std::endl;
         avg_depth += level;
+        avg_src_deg += adj_deg_h[src_list[i]];
         t_elpd = t_end - t_st;
         curr_gteps = (double) (tr_edge / t_elpd) / 1000000000;
         avg_gteps += curr_gteps;
@@ -495,9 +506,11 @@ int bfs( // breadth-first search on GPU
         std::cout << "Current GTEPS: " << curr_gteps << std::endl;
     }
 
+    avg_src_deg /= NUM_ITER;
     avg_depth /= NUM_ITER;
     avg_gteps /= NUM_ITER;
     std::cout << "===========================================================" << std::endl;
+    std::cout << "Average degree of soucre: " << avg_src_deg << std::endl;
     std::cout << "Average depth: " << avg_depth << std::endl;
     std::cout << "Average GTEPS: " << avg_gteps << std::endl;
     std::cout << "===========================================================" << std::endl;

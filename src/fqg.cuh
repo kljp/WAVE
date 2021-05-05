@@ -174,7 +174,7 @@ __global__ void fqg_bu_wcsa( // warp-cooperative status array check
     index_t beg_pos;
 
     vertex_t nbid; // neighbor vertex id
-    index_t pred = 0;
+    index_t pred;
 
     while(wid < vert_count){
 
@@ -183,10 +183,10 @@ __global__ void fqg_bu_wcsa( // warp-cooperative status array check
             deg_curr = adj_deg_d[wid];
             beg_pos = offset_d[wid];
             lid = lid_st;
+            pred = 0;
 
             while(lid < deg_curr){
 
-//                pred = 0;
                 nbid = adj_list_d[beg_pos + lid];
 
                 if(sa_d[nbid] == level) {
@@ -199,7 +199,7 @@ __global__ void fqg_bu_wcsa( // warp-cooperative status array check
 
                     if(lid_st == 0)
                         atomicAdd(fq_bu_curr_sz, 1);
-                    pred = 0;
+
                     break;
                 }
 

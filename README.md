@@ -4,11 +4,9 @@
 This project aims to support a high performance breadth-first graph traversal on GPUs.
 
 ---
-Tested Operating system
+Tested operating system
 -----
 Ubuntu 16.04.5 LTS, Ubuntu 20.04.1 LTS
-
----
 
 ---
 Tested software
@@ -31,20 +29,25 @@ Execute
 ./gbro *_beg_pos.bin *_csr.bin
 
 ---
-Converter: edge tuples to CSR
-----
-- Compile: make
-- Execute: type "./text_to_bin.bin", it will show you what is needed
-- Basically, you could download a tuple list file from [snap](https://snap.stanford.edu/data/). Afterwards, you could use this converter to convert the edge list into CSR format. 
-
-**For example**:
-
-- Download https://snap.stanford.edu/data/com-Orkut.html file. **unzip** it. 
-- **./text_to_bin.bin soc-orkut.mtx 1 2(could change, depends on the number of lines are not edges)**
-- You will get *soc-orkut.mtx_beg_pos.bin* and *soc-orkut.mtx_csr.bin*. 
-- You could use these two files to run GBRO.
-
----
 Code specification
 -----
-TBD
+####GBRO implementation:
+- main.cu: load a graph as an input
+- bfs.cuh: traverse the graph
+- fqg.cuh: implementation of traversals of top-down and bottom-up
+- mcpy.cuh: functions for initializing data structures
+- alloc.cuh: memory allocation for data structures
+- comm.cuh: global variables and functions shared by all files
+
+####Headers Provided by https://github.com/iHeartGraph/Enterprise/:
+- graph.h: graph data structure
+- graph.hpp: implementation of graph data structure
+- wtime.h: get current time for measuring the consumed time
+
+####CSR Generator provided by https://github.com/hpda-lab/XBFS/:
+- csrg.cpp: generate CSR
+    - Compile: make
+    - Execute: ./csrg <reverse> <lines_to_skip>
+    - Graph source: use one in your preference
+        - Text file (.txt): https://snap.stanford.edu/data/
+        - Matrix market (.mtx): https://sparse.tamu.edu/SNAP/

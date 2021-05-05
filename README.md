@@ -31,7 +31,7 @@ Execute
 ---
 Code specification
 -----
-####GBRO implementation:
+__GBRO implementation:__
 - main.cu: load a graph as an input
 - bfs.cuh: traverse the graph
 - fqg.cuh: implementation of traversals of top-down and bottom-up
@@ -39,15 +39,15 @@ Code specification
 - alloc.cuh: memory allocation for data structures
 - comm.cuh: global variables and functions shared by all files
 
-####Headers Provided by https://github.com/iHeartGraph/Enterprise/:
+__Headers Provided by https://github.com/iHeartGraph/Enterprise/:__
 - graph.h: graph data structure
 - graph.hpp: implementation of graph data structure
 - wtime.h: get current time for measuring the consumed time
 
-####CSR Generator provided by https://github.com/hpda-lab/XBFS/:
+__CSR Generator provided by https://github.com/hpda-lab/XBFS/:__
 - csrg.cpp: generate CSR
     - Compile: make
-    - Execute: ./csrg <reverse> <lines_to_skip>
+    - Execute: ./csrg \<reverse\> \<lines_to_skip\>
     - Graph source: use one in your preference
         - Text file (.txt): https://snap.stanford.edu/data/
         - Matrix market (.mtx): https://sparse.tamu.edu/SNAP/

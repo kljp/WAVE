@@ -49,3 +49,10 @@ __CSR Generator provided by https://github.com/hpda-lab/XBFS/:__
     - Compile: make
     - Execute: ./csrg \<reverse\> \<lines_to_skip\>
     - Graph source: https://sparse.tamu.edu/
+
+---
+Contact
+-----
+If you have any questions about this project, contact me by one of the followings:
+- slashxp@naver.com
+- kljp@ajou.ac.kr

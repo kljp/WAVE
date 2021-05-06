@@ -510,7 +510,7 @@ int bfs( // breadth-first search on GPU
     avg_depth /= NUM_ITER;
     avg_gteps /= NUM_ITER;
     std::cout << "===========================================================" << std::endl;
-    std::cout << "Average degree of soucre: " << avg_src_deg << std::endl;
+    std::cout << "Average degree of source: " << avg_src_deg << std::endl;
     std::cout << "Average depth: " << avg_depth << std::endl;
     std::cout << "Average GTEPS: " << avg_gteps << std::endl;
     std::cout << "===========================================================" << std::endl;

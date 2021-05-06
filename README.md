@@ -26,7 +26,7 @@ make
 ---
 Execute
 -----
-./gbro \<*_beg_pos.bin\> \<*_csr.bin\>
+./gbro \<\*_beg_pos.bin\> \<\*_csr.bin\>
 
 ---
 Code specification

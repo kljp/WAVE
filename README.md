@@ -48,6 +48,4 @@ __CSR Generator provided by https://github.com/hpda-lab/XBFS/:__
 - csrg.cpp: generate CSR
     - Compile: make
     - Execute: ./csrg \<reverse\> \<lines_to_skip\>
-    - Graph source: use one in your preference
-        - Text file (.txt): https://snap.stanford.edu/data/
-        - Matrix market (.mtx): https://sparse.tamu.edu/SNAP/
+    - Graph source: https://sparse.tamu.edu/

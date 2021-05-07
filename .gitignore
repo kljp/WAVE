@@ -1,9 +1,8 @@
 .idea/
 cmake-build-debug/
 data/
+*.o
 src/main
-src/main.o
 src/gbro
-src/CSRGenerator/csrg.o
 src/CSRGenerator/csrg
 CMakeLists.txt

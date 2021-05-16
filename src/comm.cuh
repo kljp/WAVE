@@ -29,7 +29,7 @@ index_t TD_BU; // 0: top-down, 1: bottom-up
 
 #define WSZ 32 // warp size
 
-#define NUM_ITER 64
+#define NUM_ITER 1024
 #define INFTY (unsigned int) (0xFFFFFFFF)
 
 static void HandleError( cudaError_t err,

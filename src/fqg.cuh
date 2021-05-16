@@ -51,7 +51,7 @@ __global__ void fqg_td_wccao( // warp-cooperative chained atomic operations
     index_t beg_pos;
 
     vertex_t nbid; // neighbor vertex id
-    depth_t nb_depth_curr;
+
     while(wid < fq_sz){
 
         vid = fq_td_in_d[wid];
@@ -62,9 +62,8 @@ __global__ void fqg_td_wccao( // warp-cooperative chained atomic operations
         while(lid < deg_curr){
 
             nbid = adj_list_d[beg_pos + lid];
-            nb_depth_curr = sa_d[nbid];
 
-            if(nb_depth_curr == INFTY){
+            if(sa_d[nbid] == INFTY){
 
                 if(atomicCAS(&sa_d[nbid],
                              INFTY,
@@ -106,7 +105,7 @@ __global__ void fqg_td_wcsac( // warp-cooperative status array check
     index_t beg_pos;
 
     vertex_t nbid; // neighbor vertex id
-    depth_t nb_depth_curr;
+
     while(wid < fq_sz){
 
         vid = fq_td_in_d[wid];
@@ -117,9 +116,8 @@ __global__ void fqg_td_wcsac( // warp-cooperative status array check
         while(lid < deg_curr){
 
             nbid = adj_list_d[beg_pos + lid];
-            nb_depth_curr = sa_d[nbid];
 
-            if(nb_depth_curr == INFTY)
+            if(sa_d[nbid] == INFTY)
                 sa_d[nbid] = (depth_t) (level + 1);
 
             lid += WSZ;

@@ -82,7 +82,7 @@ void bfs_bu(
         vertex_t *fq_bu_curr_sz
 ){
 
-    fqg_bu_wcsa<vertex_t, index_t, depth_t>
+    fqg_bu_wcsac<vertex_t, index_t, depth_t>
     <<<BLKS_NUM_BU_WCSA, THDS_NUM_BU_WCSA>>>(
 
             sa_d,

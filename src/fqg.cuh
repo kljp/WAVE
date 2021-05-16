@@ -152,7 +152,7 @@ __global__ void fqg_td_tcfe( // thread-centric frontier enqueue
 }
 
 template<typename vertex_t, typename index_t, typename depth_t>
-__global__ void fqg_bu_wcsa( // warp-cooperative status array check
+__global__ void fqg_bu_wcsac( // warp-cooperative status array check
 
         depth_t *sa_d,
         const vertex_t * __restrict__ adj_list_d,
@@ -166,8 +166,7 @@ __global__ void fqg_bu_wcsa( // warp-cooperative status array check
     index_t tid = threadIdx.x + blockIdx.x * blockDim.x;
     index_t lid_st = tid % WSZ; // laneID
     index_t lid;
-    index_t wid_st = tid / WSZ; // warpID
-    index_t wid = wid_st;
+    index_t wid = tid / WSZ; // warpID
     const index_t grnt = blockDim.x * gridDim.x / WSZ; // granularity
 
     index_t deg_curr;

@@ -41,6 +41,9 @@ __global__ void mcpy_init_fq_td(
     tid = tid_st;
     while(tid < vert_count){
 
+        if(fq_td_d[tid] == -1)
+            break;
+        
         fq_td_d[tid] = temp_fq_td_d[tid];
         tid += grnt;
     }

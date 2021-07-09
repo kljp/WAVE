@@ -349,7 +349,7 @@ int bfs( // breadth-first search on GPU
 
     depth_t *sa_d; // status array on GPU
     depth_t *sa_h; // status array on CPU
-    depth_t *temp_sa; // initial state of status array (It will be used for iterative test in the future)
+    depth_t *temp_sa; // initial state of status array (used for iterative test)
     index_t *adj_deg_d; // the number of neighbors for each vertex
     index_t *adj_deg_h;
     vertex_t *adj_list_d; // adjacent lists

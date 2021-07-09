@@ -4,8 +4,6 @@
 #include <fstream>
 #include <climits>
 
-using namespace std;
-
 template <typename vertex_t, typename index_t, typename depth_t>
 void process_graph(
 
@@ -84,7 +82,7 @@ int main(int argc, char **argv){
     }
 
     if(is_verylarge){
-        std::cout << "[Valid] Data type='unsigned long long'" << std::endl;
+        std::cout << "Data type='unsigned long long'" << std::endl;
         process_graph<unsigned long long, unsigned long long, unsigned int>(
                 file_beg_pos,
                 file_adj_list,
@@ -92,7 +90,7 @@ int main(int argc, char **argv){
         );
     }
     else{
-        std::cout << "[Valid] Data type='unsigned int'" << std::endl;
+        std::cout << "Data type='unsigned int'" << std::endl;
         process_graph<unsigned int, unsigned int, unsigned int>(
                 file_beg_pos,
                 file_adj_list,

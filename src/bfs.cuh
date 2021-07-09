@@ -139,12 +139,13 @@ void bfs_tdbu(
         vertex_t *fq_sz_h,
         vertex_t *fq_td_2_d,
         vertex_t *fq_td_2_curr_sz,
-        vertex_t *fq_bu_curr_sz
+        vertex_t *fq_bu_curr_sz,
+        vertex_t INFTY
 ){
 
-    index_t fq_swap = 1;
-    index_t reversed = 0;
-    TD_BU = 0;
+    bool fq_swap = true;
+    bool reversed = false;
+    bool TD_BU = false; // true: top-down, false: bottom-up
 
     *fq_sz_h = 1;
 
@@ -153,27 +154,27 @@ void bfs_tdbu(
         if(*fq_sz_h < (vertex_t) (PAR_BETA * vert_count)){
 
             if(TD_BU)
-                reversed = 1;
+                reversed = true;
 
-            TD_BU = 0;
+            TD_BU = false;
         }
 
         else
-            TD_BU = 1;
+            TD_BU = true;
 
 
         if(!TD_BU){
 
-            if(fq_swap == 0)
-                fq_swap = 1;
+            if(!fq_swap)
+                fq_swap = true;
             else
-                fq_swap = 0;
+                fq_swap = false;
 
             if(level != 0){
 
-                if(reversed == 0){
+                if(!reversed){
 
-                    if(fq_swap == 0){
+                    if(!fq_swap){
 
                         mcpy_init_fq_td<vertex_t, index_t, depth_t>
                         <<<BLKS_NUM_INIT_RT, THDS_NUM_INIT_RT>>>(
@@ -182,7 +183,8 @@ void bfs_tdbu(
                                 temp_fq_td_d,
                                 temp_fq_curr_sz,
                                 fq_td_2_d,
-                                fq_td_2_curr_sz
+                                fq_td_2_curr_sz,
+                                INFTY
                         );
                     }
 
@@ -194,7 +196,8 @@ void bfs_tdbu(
                             <<<1, 1>>>(
 
                                     fq_td_1_d,
-                                    fq_td_1_curr_sz
+                                    fq_td_1_curr_sz,
+                                    INFTY
                             );
                         }
 
@@ -207,7 +210,8 @@ void bfs_tdbu(
                                     temp_fq_td_d,
                                     temp_fq_curr_sz,
                                     fq_td_1_d,
-                                    fq_td_1_curr_sz
+                                    fq_td_1_curr_sz,
+                                    INFTY
                             );
                         }
                     }
@@ -215,8 +219,8 @@ void bfs_tdbu(
 
                 else{
 
-                    reversed = 0;
-                    fq_swap = 0;
+                    reversed = false;
+                    fq_swap = false;
 
                     mcpy_init_fq_td<vertex_t, index_t, depth_t>
                     <<<BLKS_NUM_INIT_RT, THDS_NUM_INIT_RT>>>(
@@ -225,7 +229,8 @@ void bfs_tdbu(
                             temp_fq_td_d,
                             temp_fq_curr_sz,
                             fq_td_2_d,
-                            fq_td_2_curr_sz
+                            fq_td_2_curr_sz,
+                            INFTY
                     );
 
                     mcpy_init_fq_td<vertex_t, index_t, depth_t>
@@ -235,7 +240,8 @@ void bfs_tdbu(
                             temp_fq_td_d,
                             temp_fq_curr_sz,
                             fq_td_1_d,
-                            fq_td_1_curr_sz
+                            fq_td_1_curr_sz,
+                            INFTY
                     );
                     cudaDeviceSynchronize();
 
@@ -253,7 +259,7 @@ void bfs_tdbu(
 
             cudaDeviceSynchronize();
 
-            if(fq_swap == 0){
+            if(!fq_swap){
 
                 bfs_td<vertex_t, index_t, depth_t>(
 
@@ -323,7 +329,7 @@ void bfs_tdbu(
 }
 
 // Function called from CPU
-template<typename vertex_t, typename index_t>
+template<typename vertex_t, typename index_t, typename depth_t>
 int bfs( // breadth-first search on GPU
 
         vertex_t *src_list,
@@ -331,11 +337,12 @@ int bfs( // breadth-first search on GPU
         vertex_t *csr,
         index_t vert_count,
         index_t edge_count,
-        index_t gpu_id
+        index_t gpu_id,
+        vertex_t INFTY
 ){
 
     srand((unsigned int) wtime());
-    index_t retry = 0;
+    int retry = 0;
 
     cudaSetDevice(gpu_id);
     cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
@@ -386,7 +393,8 @@ int bfs( // breadth-first search on GPU
 
             vert_count,
             temp_fq_td_d,
-            temp_fq_curr_sz
+            temp_fq_curr_sz,
+            INFTY
     );
     cudaDeviceSynchronize();
 
@@ -413,7 +421,8 @@ int bfs( // breadth-first search on GPU
                 temp_fq_td_d,
                 temp_fq_curr_sz,
                 fq_td_1_d,
-                fq_td_1_curr_sz
+                fq_td_1_curr_sz,
+                INFTY
         );
         cudaDeviceSynchronize();
 
@@ -424,7 +433,8 @@ int bfs( // breadth-first search on GPU
                 temp_fq_td_d,
                 temp_fq_curr_sz,
                 fq_td_2_d,
-                fq_td_2_curr_sz
+                fq_td_2_curr_sz,
+                INFTY
         );
         cudaDeviceSynchronize();
 
@@ -464,7 +474,8 @@ int bfs( // breadth-first search on GPU
                 fq_sz_h,
                 fq_td_2_d,
                 fq_td_2_curr_sz,
-                fq_bu_curr_sz
+                fq_bu_curr_sz,
+                INFTY
         );
 
         t_end = wtime();
@@ -476,7 +487,7 @@ int bfs( // breadth-first search on GPU
         H_ERR(cudaMemcpy(sa_h, sa_d, sizeof(depth_t) * vert_count, cudaMemcpyDeviceToHost));
 
         for(index_t j = 0; j < vert_count; j++){
-            if(sa_h[j] != INFTY){
+            if(sa_h[j] != UNVISITED){
 
                 tr_vert++;
                 tr_edge += adj_deg_h[j];

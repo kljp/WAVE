@@ -55,7 +55,7 @@ struct alloc{
 
         H_ERR(cudaMallocHost((void **) &temp_sa, sizeof(depth_t) * vert_count));
         for (index_t i = 0; i < vert_count; i++)
-            temp_sa[i] = INFTY;
+            temp_sa[i] = UNVISITED;
         H_ERR(cudaMallocHost((void **) &sa_h, sizeof(depth_t) * vert_count));
         cpu_bytes += sizeof(depth_t) * vert_count * 2;
 

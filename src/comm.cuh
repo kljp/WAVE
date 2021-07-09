@@ -3,12 +3,6 @@
 
 #include <stdio.h>
 
-typedef int vertex_t;
-typedef int index_t;
-typedef unsigned int depth_t;
-
-index_t TD_BU; // 0: top-down, 1: bottom-up
-
 #define BLKS_NUM_INIT 4096
 #define THDS_NUM_INIT 256
 #define BLKS_NUM_INIT_RT 4096
@@ -30,7 +24,7 @@ index_t TD_BU; // 0: top-down, 1: bottom-up
 #define WSZ 32 // warp size
 
 #define NUM_ITER 1024
-#define INFTY (unsigned int) (0xFFFFFFFF)
+#define UNVISITED (unsigned int) (0xFFFFFFFF)
 
 static void HandleError( cudaError_t err,
                          const char *file,

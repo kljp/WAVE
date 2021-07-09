@@ -1,7 +1,7 @@
-exe = csrg
+exe = vcsr
 
 cc = "$(shell which g++)" 
-flags = -O3
+flags = -O3 -w
 
 objs = $(patsubst %.cpp,%.o,$(wildcard ../../lib/*.cpp)) \
 			$(patsubst %.cpp,%.o,$(wildcard *.cpp))

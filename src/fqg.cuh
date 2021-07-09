@@ -18,10 +18,11 @@ template<typename vertex_t, typename index_t, typename depth_t>
 __global__ void init_fqg_2(
 
         vertex_t *fq_td_d,
-        vertex_t *fq_td_curr_sz
+        vertex_t *fq_td_curr_sz,
+        vertex_t INFTY
 ){
 
-    fq_td_d[0] = -1;
+    fq_td_d[0] = INFTY;
     *fq_td_curr_sz = 0;
 }
 
@@ -63,12 +64,12 @@ __global__ void fqg_td_wccao( // warp-cooperative chained atomic operations
 
             nbid = adj_list_d[beg_pos + lid];
 
-            if(sa_d[nbid] == INFTY){
+            if(sa_d[nbid] == UNVISITED){
 
                 if(atomicCAS(&sa_d[nbid],
-                             INFTY,
+                             UNVISITED,
                              (depth_t) (level + 1)
-                             ) == INFTY){
+                             ) == UNVISITED){
 
                     fq_td_out_d[atomicAdd(fq_td_out_curr_sz, 1)] = nbid;
                 }
@@ -117,7 +118,7 @@ __global__ void fqg_td_wcsac( // warp-cooperative status array check
 
             nbid = adj_list_d[beg_pos + lid];
 
-            if(sa_d[nbid] == INFTY)
+            if(sa_d[nbid] == UNVISITED)
                 sa_d[nbid] = (depth_t) (level + 1);
 
             lid += WSZ;
@@ -175,7 +176,7 @@ __global__ void fqg_bu_wcsac( // warp-cooperative status array check
 
     while(wid < vert_count){
 
-        if(sa_d[wid] == INFTY){
+        if(sa_d[wid] == UNVISITED){
 
             deg_curr = adj_deg_d[wid];
             beg_pos = offset_d[wid];

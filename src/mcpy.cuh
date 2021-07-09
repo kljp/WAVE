@@ -6,7 +6,8 @@ __global__ void mcpy_init_temp(
 
         index_t vert_count,
         vertex_t *temp_fq_td_d,
-        vertex_t *temp_fq_curr_sz
+        vertex_t *temp_fq_curr_sz,
+        vertex_t INFTY
 ){
 
     index_t tid_st = threadIdx.x + blockDim.x * blockIdx.x;
@@ -16,7 +17,7 @@ __global__ void mcpy_init_temp(
     tid = tid_st;
     while(tid < vert_count){
 
-        temp_fq_td_d[tid] = -1;
+        temp_fq_td_d[tid] = INFTY;
         tid += grnt;
     }
 
@@ -31,7 +32,8 @@ __global__ void mcpy_init_fq_td(
         vertex_t *temp_fq_td_d,
         vertex_t *temp_fq_curr_sz,
         vertex_t *fq_td_d,
-        vertex_t *fq_td_curr_sz
+        vertex_t *fq_td_curr_sz,
+        vertex_t INFTY
 ){
 
     index_t tid_st = threadIdx.x + blockDim.x * blockIdx.x;
@@ -41,7 +43,7 @@ __global__ void mcpy_init_fq_td(
     tid = tid_st;
     while(tid < vert_count){
 
-        if(fq_td_d[tid] == -1)
+        if(fq_td_d[tid] == INFTY)
             break;
         
         fq_td_d[tid] = temp_fq_td_d[tid];

@@ -4,5 +4,5 @@ data/
 *.o
 src/main
 src/gbro
-src/CSRGenerator/csrg
+src/vcsr/vcsr
 CMakeLists.txt

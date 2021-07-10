@@ -197,7 +197,10 @@ void preprocess_graph(
                     temp = adj_list[k];
                     adj_list[k] = adj_list[k + 1];
                     adj_list[k + 1] = temp;
-                    k--;
+                    if(k<=0) // Without this condition, underflow occurs since the data type of 'k' is 'unsigned'.
+                        break;
+                    else
+                        k--;
                 }
             }
         }

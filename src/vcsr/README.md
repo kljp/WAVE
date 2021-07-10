@@ -6,17 +6,17 @@ This project supports codes for manipulating a vCSR format of graph data \(CSR f
 ---
 Tested operating system
 -----
-Ubuntu 18.04.5 LTS
+Ubuntu \[18.04.5, 20.04.02\] LTS
 
 ---
 Tested software
 -----
-g++ 7.5.0
+g++ \[7.5.0, 9.3.0\]
 
 ---
 Tested hardware
 -----
-Intel(R) Xeon(R) CPU E3-1231 v3 @ 3.40GHz
+Intel(R) Xeon(R) CPU E3-1231 v3 @ 3.40GHz, Intel(R) Core(TM) i7-8700 CPU @ 3.20GHz
 
 ---
 Compile

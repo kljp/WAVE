@@ -6,12 +6,12 @@ This project aims to support a high performance breadth-first graph traversal on
 ---
 Tested operating system
 -----
-Ubuntu 16.04.5 LTS, Ubuntu 18.04.5, Ubuntu 20.04.1 LTS
+Ubuntu \[16.04.5/18.04.5/20.04.2\] LTS
 
 ---
 Tested software
 -----
-g++ 5.4.0, g++ 7.5.0, CUDA 11.2, CUDA 11.3
+g++ \[5.4.0, 7.5.0, 9.3.0\] CUDA \[11.2, 11.3, 11.4\]
 
 ---
 Tested hardware

@@ -18,13 +18,13 @@
 #define BLKS_NUM_REV_TCFE 16384
 #define THDS_NUM_REV_TCFE 256
 
-#define PAR_ALPHA 0.00023
-#define PAR_BETA 0.13
-
 #define WSZ 32 // warp size
 
 #define NUM_ITER 1024
 #define UNVISITED (unsigned int) (0xFFFFFFFF)
+
+double par_alpha;
+double par_beta;
 
 static void HandleError( cudaError_t err,
                          const char *file,
@@ -49,6 +49,45 @@ __global__ void warm_up_gpu(){
 
     for(int i = 0; i < 10; i++)
         vc += ((float) tid + va * vb);
+}
+
+template<typename vertex_t, typename index_t>
+void calc_par_opt(
+
+        const vertex_t * __restrict__  adj_deg_h,
+        const index_t vert_count,
+        const index_t edge_count
+){
+
+    double avg_deg = (double) edge_count / vert_count;
+    vertex_t cnt_high = 0;
+    for(vertex_t i = 0; i < vert_count; i++){
+        if(adj_deg_h[i] > avg_deg)
+            cnt_high ++;
+    }
+
+    double prob_high = (double) cnt_high / vert_count;
+    double base_beta = avg_deg * prob_high;
+    if(base_beta > 1.0){
+        double num_beta = (double) vert_count * prob_high;
+        double w_beta_0 = log(num_beta) / log(base_beta);
+        double w_beta_1 = 32.0;
+        par_beta = w_beta_0 / w_beta_1;
+    }
+    else
+        par_beta = 1.0;
+
+    double prob_low = 1.0 - prob_high;
+    double base_alpha = avg_deg * prob_low;
+    double num_alpha = (double) vert_count * prob_low;
+    double w_alpha_0 = log(num_alpha) / log(base_alpha);
+
+    if(w_alpha_0 > 0.0){
+        double w_alpha_1 = 32.0;
+        par_alpha = w_alpha_0 / (w_alpha_1 * avg_deg * avg_deg);
+    }
+    else
+        par_alpha = 0.0;
 }
 
 #endif

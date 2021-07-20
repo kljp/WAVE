@@ -21,7 +21,7 @@ void bfs_td(
         vertex_t *fq_td_out_curr_sz
 ){
 
-    if(*fq_sz_h < (vertex_t) (PAR_ALPHA * vert_count)){
+    if(*fq_sz_h < (vertex_t) (par_alpha * vert_count)){
 
         fqg_td_wccao<vertex_t, index_t, depth_t> // warp-cooperative chained atomic operations
         <<<BLKS_NUM_TD_WCCAO, THDS_NUM_TD_WCCAO>>>(
@@ -151,7 +151,7 @@ void bfs_tdbu(
 
     for(level = 0; ; level++){
 
-        if(*fq_sz_h < (vertex_t) (PAR_BETA * vert_count)){
+        if(*fq_sz_h < (vertex_t) (par_beta * vert_count)){
 
             if(TD_BU)
                 reversed = true;
@@ -402,6 +402,7 @@ int bfs( // breadth-first search on GPU
     double avg_depth = 0.0;
     double avg_src_deg = 0.0;
     double t_st, t_end, t_elpd; // time_start, time_end, time_elapsed
+    double t_par_st, t_par_end, t_par_elpd, avg_t_par; // time_calc_par_opt_start, time_calc_par_opt_end, time_calc_par_opt_elapsed
     double avg_gteps = 0.0; // average_teps (traversed edges per second)
     double curr_gteps; // current_teps
 
@@ -459,6 +460,15 @@ int bfs( // breadth-first search on GPU
 
         t_st = wtime();
 
+        t_par_st = wtime();
+        calc_par_opt<vertex_t, index_t>(
+
+                adj_deg_h,
+                vert_count,
+                edge_count
+        );
+        t_par_end = wtime();
+
         bfs_tdbu<vertex_t, index_t, depth_t>(
 
                 sa_d,
@@ -510,18 +520,24 @@ int bfs( // breadth-first search on GPU
         avg_depth += level;
         avg_src_deg += adj_deg_h[src_list[i]];
         t_elpd = t_end - t_st;
+        t_par_elpd = t_par_end - t_par_st;
+        avg_t_par += t_par_elpd;
         curr_gteps = (double) (tr_edge / t_elpd) / 1000000000;
         avg_gteps += curr_gteps;
         std::cout << "Depth: " << level << std::endl;
+        std::cout << "Overhead of direction-optimizer (s): " << t_par_elpd << std::endl;
         std::cout << "Consumed time (s): " << t_elpd << std::endl;
         std::cout << "Current GTEPS: " << curr_gteps << std::endl;
     }
 
     avg_src_deg /= NUM_ITER;
     avg_depth /= NUM_ITER;
+    avg_t_par /= NUM_ITER;
     avg_gteps /= NUM_ITER;
     std::cout << "===========================================================" << std::endl;
     std::cout << "Average degree of source: " << avg_src_deg << std::endl;
+    std::cout << "Average degree of source: " << avg_src_deg << std::endl;
+    std::cout << "Average overhead of direction-optimizer (s): " << avg_t_par << std::endl;
     std::cout << "Average depth: " << avg_depth << std::endl;
     std::cout << "Average GTEPS: " << avg_gteps << std::endl;
     std::cout << "===========================================================" << std::endl;

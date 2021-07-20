@@ -23,6 +23,8 @@
 #define NUM_ITER 1024
 #define UNVISITED (unsigned int) (0xFFFFFFFF)
 
+double avg_deg;
+double prob_high;
 double par_alpha;
 double par_beta;
 
@@ -59,14 +61,15 @@ void calc_par_opt(
         const index_t edge_count
 ){
 
-    double avg_deg = (double) edge_count / vert_count;
+    avg_deg = (double) edge_count / vert_count;
     vertex_t cnt_high = 0;
-    for(vertex_t i = 0; i < vert_count; i++){
-        if(adj_deg_h[i] > avg_deg)
+    vertex_t sample_sz = vert_count / (1 + vert_count * 0.05 * 0.05);
+    for(vertex_t i = 0; i < sample_sz; i++){
+        if(adj_deg_h[rand() % vert_count] > avg_deg)
             cnt_high ++;
     }
 
-    double prob_high = (double) cnt_high / vert_count;
+    prob_high = (double) cnt_high / sample_sz;
     double base_beta = avg_deg * prob_high;
     if(base_beta > 1.0){
         double num_beta = (double) vert_count * prob_high;

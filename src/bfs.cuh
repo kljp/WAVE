@@ -399,9 +399,9 @@ int bfs( // breadth-first search on GPU
     cudaDeviceSynchronize();
 
     depth_t level;
+    double avg_prob_high = 0.0;
     double avg_depth = 0.0;
-    double avg_src_deg = 0.0;
-    double t_st, t_end, t_elpd; // time_start, time_end, time_elapsed
+    double t_st, t_end, t_elpd, avg_t; // time_start, time_end, time_elapsed
     double t_par_st, t_par_end, t_par_elpd, avg_t_par; // time_calc_par_opt_start, time_calc_par_opt_end, time_calc_par_opt_elapsed
     double avg_gteps = 0.0; // average_teps (traversed edges per second)
     double curr_gteps; // current_teps
@@ -514,31 +514,35 @@ int bfs( // breadth-first search on GPU
         }
         retry = 0;
 
-        std::cout << "The degree of source: " << adj_deg_h[src_list[i]] << std::endl;
+        std::cout << "Started from " << src_list[i] << std::endl;
         std::cout << "The number of traversed vertices: " << tr_vert << std::endl;
         std::cout << "The number of traversed edges: " << tr_edge << std::endl;
+        avg_prob_high += prob_high;
         avg_depth += level;
-        avg_src_deg += adj_deg_h[src_list[i]];
         t_elpd = t_end - t_st;
-        t_par_elpd = t_par_end - t_par_st;
+        avg_t += t_elpd;
+        t_par_elpd = (t_par_end - t_par_st) * 1000000.0;
         avg_t_par += t_par_elpd;
         curr_gteps = (double) (tr_edge / t_elpd) / 1000000000;
         avg_gteps += curr_gteps;
+        std::cout << "The probability of high-degree vertex: " << prob_high << std::endl;
         std::cout << "Depth: " << level << std::endl;
-        std::cout << "Overhead of direction-optimizer (s): " << t_par_elpd << std::endl;
+        std::cout << "Overhead of direction-optimizer (us): " << t_par_elpd << std::endl;
         std::cout << "Consumed time (s): " << t_elpd << std::endl;
         std::cout << "Current GTEPS: " << curr_gteps << std::endl;
     }
 
-    avg_src_deg /= NUM_ITER;
+    avg_prob_high /= NUM_ITER;
     avg_depth /= NUM_ITER;
     avg_t_par /= NUM_ITER;
+    avg_t /= NUM_ITER;
     avg_gteps /= NUM_ITER;
     std::cout << "===========================================================" << std::endl;
-    std::cout << "Average degree of source: " << avg_src_deg << std::endl;
-    std::cout << "Average degree of source: " << avg_src_deg << std::endl;
-    std::cout << "Average overhead of direction-optimizer (s): " << avg_t_par << std::endl;
+    std::cout << "Average degree: " << avg_deg << std::endl;
+    std::cout << "Average probability of high-degree vertex: " << avg_prob_high << std::endl;
     std::cout << "Average depth: " << avg_depth << std::endl;
+    std::cout << "Average overhead of direction-optimizer (us): " << avg_t_par << std::endl;
+    std::cout << "Average consumed time (s): " << avg_t << std::endl;
     std::cout << "Average GTEPS: " << avg_gteps << std::endl;
     std::cout << "===========================================================" << std::endl;
 

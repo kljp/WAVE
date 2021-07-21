@@ -427,6 +427,8 @@ int bfs( // breadth-first search on GPU
     depth_t level;
     double avg_prob_high = 0.0;
     double avg_depth = 0.0;
+    double avg_par_alpha = 0.0;
+    double avg_par_beta = 0.0;
     double t_st, t_end, t_elpd, avg_t; // time_start, time_end, time_elapsed
     double t_par_st, t_par_end, t_par_elpd, avg_t_par; // time_calc_par_opt_start, time_calc_par_opt_end, time_calc_par_opt_elapsed
     double avg_gteps = 0.0; // average_teps (traversed edges per second)
@@ -545,6 +547,10 @@ int bfs( // breadth-first search on GPU
         std::cout << "The number of traversed edges: " << tr_edge << std::endl;
         avg_prob_high += prob_high;
         avg_depth += level;
+        if(verbose){
+            avg_par_alpha += par_alpha;
+            avg_par_beta += par_beta;
+        }
         t_elpd = t_end - t_st;
         avg_t += t_elpd;
         t_par_elpd = (t_par_end - t_par_st) * 1000000.0;
@@ -590,6 +596,9 @@ int bfs( // breadth-first search on GPU
         t_wcfp_large = t_fqg_bu_wcsac + t_fqg_rev_tcfe;
         t_wcfp_total = t_wcfp_small + t_wcfp_medium + t_wcfp_large;
 
+        avg_par_alpha /= NUM_ITER;
+        avg_par_beta /= NUM_ITER;
+
         std::cout << "Breakdown of kernel execution of frontier processing techniques" << std::endl;
         std::cout << "===================================================================" << std::endl;
         std::cout << "fqg_td_wccao: " << t_fqg_td_wccao << "us (" << t_fqg_td_wccao * 100 / t_wcfp_total << "%)" << std::endl;
@@ -605,9 +614,9 @@ int bfs( // breadth-first search on GPU
         std::cout << "Top-down: " << t_wcfp_small + t_wcfp_medium << "us (" << (t_wcfp_small + t_wcfp_medium) * 100 / t_wcfp_total << "%)" << std::endl;
         std::cout << "Bottom-up: " << t_wcfp_large << "us (" << t_wcfp_large * 100 / t_wcfp_total << "%)" << std::endl;
         std::cout << "===================================================================" << std::endl;
-        std::cout << "Parameters" << std::endl;
-        std::cout << "alpha: " << par_alpha << std::endl;
-        std::cout << "beta: " << par_beta << std::endl;
+        std::cout << "Parameters (average)" << std::endl;
+        std::cout << "alpha: " << avg_par_alpha << std::endl;
+        std::cout << "beta: " << avg_par_beta << std::endl;
         std::cout << "===================================================================" << std::endl;
     }
 

@@ -605,6 +605,10 @@ int bfs( // breadth-first search on GPU
         std::cout << "Top-down: " << t_wcfp_small + t_wcfp_medium << "us (" << (t_wcfp_small + t_wcfp_medium) * 100 / t_wcfp_total << "%)" << std::endl;
         std::cout << "Bottom-up: " << t_wcfp_large << "us (" << t_wcfp_large * 100 / t_wcfp_total << "%)" << std::endl;
         std::cout << "===================================================================" << std::endl;
+        std::cout << "Parameters" << std::endl;
+        std::cout << "alpha: " << par_alpha << std::endl;
+        std::cout << "beta: " << par_beta << std::endl;
+        std::cout << "===================================================================" << std::endl;
     }
 
     ///// iteration ends ///////////////////////////////////////////////////////////////////////////////////////////////

@@ -92,13 +92,8 @@ void calc_par_opt(
     double base_alpha = avg_deg * prob_low;
     double num_alpha = (double) vert_count * prob_low;
     double w_alpha_0 = log(num_alpha) / log(base_alpha);
-
-    if(w_alpha_0 > 0.0){
-        double w_alpha_1 = 32.0;
-        par_alpha = w_alpha_0 / (w_alpha_1 * avg_deg * avg_deg);
-    }
-    else
-        par_alpha = 0.0;
+    double w_alpha_1 = 32.0;
+    par_alpha = abs(w_alpha_0) / (w_alpha_1 * avg_deg * avg_deg);
 }
 
 #endif

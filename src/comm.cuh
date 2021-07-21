@@ -28,6 +28,14 @@ double prob_high;
 double par_alpha;
 double par_beta;
 
+bool verbose;
+
+double t_fqg_td_wccao = 0.0;
+double t_fqg_td_wcsac = 0.0;
+double t_fqg_td_tcfe = 0.0;
+double t_fqg_bu_wcsac = 0.0;
+double t_fqg_rev_tcfe = 0.0;
+
 static void HandleError( cudaError_t err,
                          const char *file,
                          int line ) {

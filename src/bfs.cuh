@@ -21,8 +21,12 @@ void bfs_td(
         vertex_t *fq_td_out_curr_sz
 ){
 
+    double t_st;
+
     if(*fq_sz_h < (vertex_t) (par_alpha * vert_count)){
 
+        if(verbose)
+            t_st = wtime();
         fqg_td_wccao<vertex_t, index_t, depth_t> // warp-cooperative chained atomic operations
         <<<BLKS_NUM_TD_WCCAO, THDS_NUM_TD_WCCAO>>>(
 
@@ -37,10 +41,14 @@ void bfs_td(
                 fq_td_out_curr_sz
         );
         cudaDeviceSynchronize();
+        if(verbose)
+            t_fqg_td_wccao += (wtime() - t_st);
     }
 
     else{
 
+        if(verbose)
+            t_st = wtime();
         fqg_td_wcsac<vertex_t, index_t, depth_t> // warp-cooperative status array check
         <<<BLKS_NUM_TD_WCSAC, THDS_NUM_TD_WCSAC>>>(
 
@@ -53,7 +61,11 @@ void bfs_td(
                 fq_td_in_curr_sz
         );
         cudaDeviceSynchronize();
+        if(verbose)
+            t_fqg_td_wcsac += (wtime() - t_st);
 
+        if(verbose)
+            t_st = wtime();
         fqg_td_tcfe<vertex_t, index_t, depth_t> // thread-centric frontier enqueue
         <<<BLKS_NUM_TD_TCFE, THDS_NUM_TD_TCFE>>>(
 
@@ -64,6 +76,8 @@ void bfs_td(
                 fq_td_out_curr_sz
         );
         cudaDeviceSynchronize();
+        if(verbose)
+            t_fqg_td_tcfe += (wtime() - t_st);
     }
 
     H_ERR(cudaMemcpy(fq_sz_h, fq_td_out_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
@@ -82,6 +96,10 @@ void bfs_bu(
         vertex_t *fq_bu_curr_sz
 ){
 
+    double t_st;
+
+    if(verbose)
+        t_st = wtime();
     fqg_bu_wcsac<vertex_t, index_t, depth_t>
     <<<BLKS_NUM_BU_WCSA, THDS_NUM_BU_WCSA>>>(
 
@@ -94,6 +112,8 @@ void bfs_bu(
             fq_bu_curr_sz
     );
     cudaDeviceSynchronize();
+    if(verbose)
+        t_fqg_bu_wcsac += (wtime() - t_st);
 
     H_ERR(cudaMemcpy(fq_sz_h, fq_bu_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
 }
@@ -109,6 +129,10 @@ void bfs_rev(
         vertex_t *fq_td_in_curr_sz
 ){
 
+    double t_st;
+
+    if(verbose)
+        t_st = wtime();
     fqg_rev_tcfe<vertex_t, index_t, depth_t> // thread-centric frontier enqueue
     <<<BLKS_NUM_REV_TCFE, THDS_NUM_REV_TCFE>>>(
 
@@ -119,6 +143,8 @@ void bfs_rev(
             fq_td_in_curr_sz
     );
     cudaDeviceSynchronize();
+    if(verbose)
+        t_fqg_rev_tcfe += (wtime() - t_st);
 
     H_ERR(cudaMemcpy(fq_sz_h, fq_td_in_curr_sz, sizeof(vertex_t), cudaMemcpyDeviceToHost));
 }
@@ -527,8 +553,8 @@ int bfs( // breadth-first search on GPU
         avg_gteps += curr_gteps;
         std::cout << "The probability of high-degree vertex: " << prob_high << std::endl;
         std::cout << "Depth: " << level << std::endl;
-        std::cout << "Overhead of direction-optimizer (us): " << t_par_elpd << std::endl;
-        std::cout << "Consumed time (s): " << t_elpd << std::endl;
+        std::cout << "Overhead of direction-optimizer: " << t_par_elpd << "us" << std::endl;
+        std::cout << "Consumed time: " << t_elpd << "s" << std::endl;
         std::cout << "Current GTEPS: " << curr_gteps << std::endl;
     }
 
@@ -537,14 +563,49 @@ int bfs( // breadth-first search on GPU
     avg_t_par /= NUM_ITER;
     avg_t /= NUM_ITER;
     avg_gteps /= NUM_ITER;
-    std::cout << "===========================================================" << std::endl;
+    std::cout << "===================================================================" << std::endl;
+    std::cout << "Summary of BFS" << std::endl;
+    std::cout << "===================================================================" << std::endl;
     std::cout << "Average degree: " << avg_deg << std::endl;
     std::cout << "Average probability of high-degree vertex: " << avg_prob_high << std::endl;
     std::cout << "Average depth: " << avg_depth << std::endl;
-    std::cout << "Average overhead of direction-optimizer (us): " << avg_t_par << std::endl;
-    std::cout << "Average consumed time (s): " << avg_t << std::endl;
+    std::cout << "Average overhead of direction-optimizer: " << avg_t_par << "us" << std::endl;
+    std::cout << "Average consumed time: " << avg_t << "s" << std::endl;
     std::cout << "Average GTEPS: " << avg_gteps << std::endl;
-    std::cout << "===========================================================" << std::endl;
+    std::cout << "===================================================================" << std::endl;
+    if(verbose){
+
+        t_fqg_td_wccao = (t_fqg_td_wccao * 1000000.0) / NUM_ITER;
+        t_fqg_td_wcsac = (t_fqg_td_wcsac * 1000000.0) / NUM_ITER;
+        t_fqg_td_tcfe = (t_fqg_td_tcfe * 1000000.0) / NUM_ITER;
+        t_fqg_bu_wcsac = (t_fqg_bu_wcsac * 1000000.0) / NUM_ITER;
+        t_fqg_rev_tcfe = (t_fqg_rev_tcfe * 1000000.0) / NUM_ITER;
+
+        double t_wcfp_small = 0.0;
+        double t_wcfp_medium = 0.0;
+        double t_wcfp_large = 0.0;
+        double t_wcfp_total = 0.0;
+        t_wcfp_small = t_fqg_td_wccao;
+        t_wcfp_medium = t_fqg_td_wcsac + t_fqg_td_tcfe;
+        t_wcfp_large = t_fqg_bu_wcsac + t_fqg_rev_tcfe;
+        t_wcfp_total = t_wcfp_small + t_wcfp_medium + t_wcfp_large;
+
+        std::cout << "Breakdown of kernel execution of frontier processing techniques" << std::endl;
+        std::cout << "===================================================================" << std::endl;
+        std::cout << "fqg_td_wccao: " << t_fqg_td_wccao << "us (" << t_fqg_td_wccao * 100 / t_wcfp_total << "%)" << std::endl;
+        std::cout << "fqg_td_wcsac: " << t_fqg_td_wcsac << "us (" << t_fqg_td_wcsac * 100 / t_wcfp_total << "%)" << std::endl;
+        std::cout << "fqg_td_tcfe: " << t_fqg_td_tcfe << "us (" << t_fqg_td_tcfe * 100 / t_wcfp_total << "%)" << std::endl;
+        std::cout << "fqg_bu_wcsac " << t_fqg_bu_wcsac << "us (" << t_fqg_bu_wcsac * 100 / t_wcfp_total << "%)" << std::endl;
+        std::cout << "fqg_rev_tcfe: " << t_fqg_rev_tcfe << "us (" << t_fqg_rev_tcfe * 100 / t_wcfp_total << "%)" << std::endl;
+        std::cout << "-------------------------------------------------------------------" << std::endl;
+        std::cout << "WCFP_SMALL: " << t_wcfp_small << "us (" << t_wcfp_small * 100 / t_wcfp_total << "%)" << std::endl;
+        std::cout << "WCFP_MEDIUM: " << t_wcfp_medium << "us (" << t_wcfp_medium * 100 / t_wcfp_total << "%)" << std::endl;
+        std::cout << "WCFP_LARGE: " << t_wcfp_large << "us (" << t_wcfp_large * 100 / t_wcfp_total << "%)" << std::endl;
+        std::cout << "-------------------------------------------------------------------" << std::endl;
+        std::cout << "Top-down: " << t_wcfp_small + t_wcfp_medium << "us (" << (t_wcfp_small + t_wcfp_medium) * 100 / t_wcfp_total << "%)" << std::endl;
+        std::cout << "Bottom-up: " << t_wcfp_large << "us (" << t_wcfp_large * 100 / t_wcfp_total << "%)" << std::endl;
+        std::cout << "===================================================================" << std::endl;
+    }
 
     ///// iteration ends ///////////////////////////////////////////////////////////////////////////////////////////////
 

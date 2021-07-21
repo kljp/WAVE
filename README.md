@@ -26,7 +26,11 @@ make
 ---
 Execute
 -----
-./gbro \<\*_beg_pos.bin\> \<\*_adj_list.bin\>
+./gbro --csr \<\*_beg_pos.bin\> \<\*_adj_list.bin\> \[option1\] \[option2\]
+- \[option1\]: --verylarge
+  - set data type of vertices and edges to 'unsigned long long', default='unsigned int'
+- \[option2\]: --verbose
+  - print breakdown of frontier processing techniques
 
 ---
 Code specification

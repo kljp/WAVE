@@ -23,7 +23,7 @@ void bfs_td(
 
     double t_st;
 
-    if(*fq_sz_h < (vertex_t) (par_alpha * vert_count)){
+    if(*fq_sz_h < (vertex_t) (par_beta * vert_count)){
 
         if(verbose)
             t_st = wtime();
@@ -177,7 +177,7 @@ void bfs_tdbu(
 
     for(level = 0; ; level++){
 
-        if(*fq_sz_h < (vertex_t) (par_beta * vert_count)){
+        if(*fq_sz_h < (vertex_t) (par_alpha * vert_count)){
 
             if(TD_BU)
                 reversed = true;

@@ -78,22 +78,22 @@ void calc_par_opt(
     }
 
     prob_high = (double) cnt_high / sample_sz;
-    double base_beta = avg_deg * prob_high;
-    if(base_beta > 1.0){
-        double num_beta = (double) vert_count * prob_high;
-        double w_beta_0 = log(num_beta) / log(base_beta);
-        double w_beta_1 = 32.0;
-        par_beta = w_beta_0 / w_beta_1;
+    double base_alpha = avg_deg * prob_high;
+    if(base_alpha > 1.0){
+        double num_alpha = (double) vert_count * prob_high;
+        double w_alpha_0 = log(num_alpha) / log(base_alpha);
+        double w_alpha_1 = 32.0;
+        par_alpha = w_alpha_0 / w_alpha_1;
     }
     else
-        par_beta = 1.0;
+        par_alpha = 1.0;
 
     double prob_low = 1.0 - prob_high;
-    double base_alpha = avg_deg * prob_low;
-    double num_alpha = (double) vert_count * prob_low;
-    double w_alpha_0 = log(num_alpha) / log(base_alpha);
-    double w_alpha_1 = 32.0;
-    par_alpha = abs(w_alpha_0) / (w_alpha_1 * avg_deg * avg_deg);
+    double base_beta = avg_deg * prob_low;
+    double num_beta = (double) vert_count * prob_low;
+    double w_beta_0 = log(num_beta) / log(base_beta);
+    double w_beta_1 = 32.0;
+    par_beta = abs(w_beta_0) / (w_beta_1 * avg_deg * avg_deg);
 }
 
 #endif

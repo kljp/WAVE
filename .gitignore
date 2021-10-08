@@ -3,6 +3,6 @@ cmake-build-debug/
 data/
 *.o
 src/main
-src/gbro
+src/fado
 src/vcsr/vcsr
 CMakeLists.txt

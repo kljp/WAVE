@@ -1,5 +1,5 @@
-# GBRO
-## GPU BFS Runtime Optimization
+# FADO
+## Flexible and Workload-Aware Direction-Optimizer for BFS on GPUs
 ---
 This project aims to support a high performance breadth-first graph traversal on GPUs.
 
@@ -26,7 +26,7 @@ make
 ---
 Execute
 -----
-./gbro --csr \<\*_beg_pos.bin\> \<\*_adj_list.bin\> \[option1\] \[option2\]
+./fado --csr \<\*_beg_pos.bin\> \<\*_adj_list.bin\> \[option1\] \[option2\]
 - \[option1\]: --verylarge
   - set data type of vertices and edges to 'unsigned long long', default='unsigned int'
 - \[option2\]: --verbose
@@ -35,7 +35,7 @@ Execute
 ---
 Code specification
 -----
-__GBRO implementation:__
+__FADO implementation:__
 - main.cu: load a graph as an input
 - bfs.cuh: traverse the graph
 - fqg.cuh: implementation of traversals of top-down and bottom-up
@@ -47,7 +47,7 @@ __CSR Generator provided by https://github.com/kljp/vCSR/:__
 - vcsr.cpp: generate CSR
     - Compile: make
     - Execute: ./vcsr --input \<\*.mtx\> \[option1\] \[option2\] \[option3\] \[option4\]
-      - \[option1\]: --virtual \<max\_degree\> \(not available for GBRO\)
+      - \[option1\]: --virtual \<max\_degree\> \(not available for FADO\)
         - set maximum degree of a vertex to \<max\_degree\>
       - \[option2\]: --undirected
         - add reverse edges

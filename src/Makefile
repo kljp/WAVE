@@ -1,4 +1,4 @@
-exe = gbro
+exe = fado
 
 cc = "$(shell which nvcc)" 
 flags = -I. -O3 -Xptxas -dlcm=ca

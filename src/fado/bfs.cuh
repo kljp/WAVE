@@ -171,7 +171,7 @@ void bfs_tdbu(
 
     bool fq_swap = true;
     bool reversed = false;
-    bool TD_BU = false; // true: top-down, false: bottom-up
+    bool TD_BU = false; // true: bottom-up, false: top-down
 
     *fq_sz_h = 1;
 

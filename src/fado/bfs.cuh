@@ -346,11 +346,8 @@ void bfs_tdbu(
             cudaDeviceSynchronize();
         }
 
-        if(!TD_BU){
-
-            if(*fq_sz_h == 0)
-                break;
-        }
+        if(*fq_sz_h == 0)
+            break;
     }
 }
 

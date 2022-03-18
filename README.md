@@ -1,6 +1,8 @@
 # WAVE
 ## Heuristics-Based Three-Way BFS on GPUs
 ---
+WAVE is abbreviation of 'working as versatile and efficient'.
+
 This project aims to support a high performance breadth-first graph traversal on GPUs.
 
 ---

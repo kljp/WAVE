@@ -1,4 +1,4 @@
-exe = fado
+exe = wave
 
 cc = "$(shell which nvcc)" 
 flags = -I. -O3 -Xptxas -dlcm=ca

@@ -2,6 +2,6 @@
 cmake-build-debug/
 data/
 *.o
-src/fado/fado
+src/wave/wave
 src/vcsr/vcsr
 CMakeLists.txt

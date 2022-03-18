@@ -1,5 +1,5 @@
-# FADO
-## Flexible and Workload-Aware Direction-Optimizer for BFS on GPUs
+# WAVE
+## Heuristics-Based Three-Way BFS on GPUs
 ---
 This project aims to support a high performance breadth-first graph traversal on GPUs.
 
@@ -26,7 +26,7 @@ make
 ---
 Execute
 -----
-./fado --csr \<\*_beg_pos.bin\> \<\*_adj_list.bin\> \[option1\] \[option2\]
+./wave --csr \<\*_beg_pos.bin\> \<\*_adj_list.bin\> \[option1\] \[option2\]
 - \[option1\]: --verylarge
   - set data type of vertices and edges to 'unsigned long long', default='unsigned int'
 - \[option2\]: --verbose
@@ -35,10 +35,10 @@ Execute
 ---
 Code specification
 -----
-__FADO implementation:__
+__WAVE implementation:__
 - main.cu: load a graph as an input
 - bfs.cuh: traverse the graph
-- fqg.cuh: implementation of traversals of top-down and bottom-up
+- fqg.cuh: implementation of push and pull phases
 - mcpy.cuh: functions for initializing data structures
 - alloc.cuh: memory allocation for data structures
 - comm.cuh: global variables and functions shared by all files
@@ -47,7 +47,7 @@ __CSR Generator provided by https://github.com/kljp/vCSR/:__
 - vcsr.cpp: generate CSR
     - Compile: make
     - Execute: ./vcsr --input \<\*.mtx\> \[option1\] \[option2\] \[option3\] \[option4\]
-      - \[option1\]: --virtual \<max\_degree\> \(not available for FADO\)
+      - \[option1\]: --virtual \<max\_degree\> \(not available for WAVE\)
         - set maximum degree of a vertex to \<max\_degree\>
       - \[option2\]: --undirected
         - add reverse edges

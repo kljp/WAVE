@@ -65,6 +65,11 @@ __Headers Provided by https://github.com/iHeartGraph/Enterprise/:__
 - graph.hpp: implementation of graph data structure
 - wtime.h: get current time for measuring the consumed time
 ---
+Publication
+-----
+**WAVE: designing a heuristics-based three-way breadth-first search on GPUs**. Daegun Yoon, Minjoong Jeong, Sangyoon Oh. ***The Journal of Supercomputing***, Nov. 2022. [**\[Paper\]**](https://link.springer.com/article/10.1007/s11227-022-04934-1)
+
+---
 Contact
 -----
 If you have any questions about this project, contact me by one of the followings:
